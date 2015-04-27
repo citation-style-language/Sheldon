@@ -1,0 +1,13 @@
+language: ruby
+bundler_args: --without debug production
+sudo: false
+cache: bundler
+rvm:
+  - 2.0.0
+  - rbx-2
+notifications:
+  email:
+    recipients:
+      - sylvester@keil.or.at
+    on_success: change
+    on_failure: always
