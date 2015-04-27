@@ -10,5 +10,5 @@ group :test do
 end
 
 group :debug do
-  gem 'byebug', require: false, platforms: :mri
+  gem 'byebug', platforms: :mri
 end
