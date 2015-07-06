@@ -3,6 +3,7 @@ ruby '2.2.2'
 
 gem 'sinatra', '~>1.4'
 gem 'erubis', '~>2.7'
+gem 'octokit', '~>4.0'
 
 group :development, :test do
   gem 'rake', '~>10.0'
