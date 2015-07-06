@@ -11,6 +11,10 @@ class Sheldon < Sinatra::Base
     'OK'
   end
 
+  get '/version' do
+    VERSION
+  end
+
   # Start Sheldon if this file was executed directly
   run! if app_file == $0
 end

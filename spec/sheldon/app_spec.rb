@@ -7,4 +7,9 @@ describe Sheldon do
     last_response.body.must_equal 'OK'
   end
 
+  it 'is versioned' do
+    get '/version'
+    last_response.body.must_equal Sheldon::VERSION
+  end
+
 end
