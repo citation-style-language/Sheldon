@@ -1,6 +1,6 @@
 require File.expand_path('../../spec_helper', __FILE__)
 
-class Sheldon
+module Sheldon
   describe Template do
 
     it 'works without variables' do

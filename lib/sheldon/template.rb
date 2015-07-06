@@ -1,7 +1,6 @@
 require 'erubis'
 
-class Sheldon
-
+module Sheldon
   class Template
 
     ROOT = File.expand_path('../../../templates', __FILE__)
@@ -20,5 +19,4 @@ class Sheldon
       @erb.result(locals)
     end
   end
-
 end
