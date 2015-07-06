@@ -3,7 +3,7 @@ bundler_args: "--without debug production"
 sudo: false
 cache: bundler
 rvm:
-- 2.2.0
+- 2.2.2
 notifications:
   email:
     recipients:
