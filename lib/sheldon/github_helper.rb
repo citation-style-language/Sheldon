@@ -1,3 +1,5 @@
+require 'json'
+
 module Sheldon
   module GithubHelper
 
@@ -8,12 +10,31 @@ module Sheldon
     end
 
     def github_event
-      @github_event ||= request.env['X_GITHUB_EVENT'].to_s.intern
+      request.env['X_GITHUB_EVENT'].to_s.intern
+    end
+
+    def github_payload
+      @github_payload ||= JSON.parse request.body.read
     end
 
     def ping?
       github_event == :ping
     end
 
+    def pull_request?
+      github_event == :pull_request
+    end
+
+    def pull_request_action
+      github_payload['action']
+    end
+
+    def pull_request
+      github_payload['pull_request']
+    end
+
+    def pull_request_comment
+      settings.pull_request[pull_request_action]
+    end
   end
 end

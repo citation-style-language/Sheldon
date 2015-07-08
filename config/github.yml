@@ -1,0 +1,9 @@
+development: &development
+  pull_request:
+    opened:
+      template: pull_request_opened
+
+test:
+  <<: *development
+
+production:

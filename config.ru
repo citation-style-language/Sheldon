@@ -1,4 +1,4 @@
 require 'bundler/setup'
 require './lib/sheldon.rb'
 
-run Sheldon
+run Sheldon::Bot

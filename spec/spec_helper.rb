@@ -9,6 +9,7 @@ end
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'rack/test'
+require 'json'
 
 require File.expand_path('../../lib/sheldon', __FILE__)
 
@@ -19,7 +20,7 @@ def app
 end
 
 def hookshot(path, type = 'test', data = {})
-  post path, data,
+  post path, data.to_json,
     'X_GITHUB_EVENT' => type,
     'CONTENT_TYPE' => 'application/json',
     'HTTP_USER_AGENT' => 'Github-Hookshot/b4dc0de'

@@ -3,12 +3,10 @@ require './lib/sheldon/github'
 
 module Sheldon
   class Bot < Sinatra::Base
-    use Sheldon::Github
+    enable :logging
+    enable :protection
 
-    configure do
-      enable :logging
-      enable :protection
-    end
+    use Sheldon::Github
 
     get '/status' do
       'OK'
