@@ -7,3 +7,6 @@ test:
   <<: *development
 
 production:
+  pull_request:
+    opened:
+      template: pull_request_opened

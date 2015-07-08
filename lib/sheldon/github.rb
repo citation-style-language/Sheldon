@@ -1,14 +1,23 @@
 require 'sinatra/base'
 require 'sinatra/config_file'
 require 'octokit'
+require 'logger'
 
 require './lib/sheldon/github_helper'
 require './lib/sheldon/template'
 
 module Sheldon
   class Github < Sinatra::Base
-    enable :logging
-    enable :protection
+    configure :development, :test do
+      set :logging, Logger::DEBUG
+      set :protection, true
+    end
+
+    configure :production do
+      set :logging, Logger::INFO
+      set :protection, true
+    end
+
 
     set :root, File.expand_path('../../..', __FILE__)
 
