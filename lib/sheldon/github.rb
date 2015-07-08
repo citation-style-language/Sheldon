@@ -21,16 +21,25 @@ module Sheldon
     set(:hookshot) { |exp| condition { exp == hookshot? } }
 
 
+    before '/pull_request', hookshot: true do
+      logger.info "GitHub hookshot #{github_event.inspect} received"
+    end
+
     post '/pull_request', hookshot: true do
       return 202 if ping?
-
       return 400 unless pull_request?
-      return 202 if pull_request_comment.nil?
 
-      #template = Template.load pull_request_comment
-      #puts template.render pull_request
+      options = settings.pull_request[pull_request_action]
+      return 202 if options.nil?
 
-      201
+      template = Template.load options['template']
+
+      comment = github.add_comment(
+        repository['full_name'],
+        pull_request['number'],
+        template.render(pull_request))
+
+      [201, nil, { location: comment.url }]
     end
 
   end

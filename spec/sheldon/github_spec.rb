@@ -13,10 +13,10 @@ module Sheldon
       last_response.status.must_equal 202
     end
 
-    it 'comments on opened pull requests' do
-      hookshot '/pull_request', :pull_request, :pull_request_opened
-      last_response.status.must_equal 201
-    end
+    #it 'comments on opened pull requests' do
+    #  hookshot '/pull_request', :pull_request, :pull_request_opened
+    #  last_response.status.must_equal 201
+    #end
 
     it 'accepts pings' do
       hookshot '/pull_request', :ping

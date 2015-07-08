@@ -33,7 +33,7 @@ def hookshot(path, type = 'test', data = {})
   data = payloads(data) unless data.is_a? Hash
 
   post path, data.to_json,
-    'X_GITHUB_EVENT' => type,
+    'X_GITHUB_EVENT' => type.to_s,
     'CONTENT_TYPE' => 'application/json',
     'HTTP_USER_AGENT' => 'Github-Hookshot/b4dc0de'
 end

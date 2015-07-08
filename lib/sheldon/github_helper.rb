@@ -10,7 +10,7 @@ module Sheldon
     end
 
     def github_event
-      request.env['X_GITHUB_EVENT'].to_s.intern
+      request.env['X_GITHUB_EVENT']
     end
 
     def github_payload
@@ -18,11 +18,11 @@ module Sheldon
     end
 
     def ping?
-      github_event == :ping
+      github_event == 'ping'
     end
 
     def pull_request?
-      github_event == :pull_request
+      github_event == 'pull_request'
     end
 
     def pull_request_action
@@ -33,8 +33,13 @@ module Sheldon
       github_payload['pull_request']
     end
 
-    def pull_request_comment
-      settings.pull_request[pull_request_action]
+    def repository
+      github_payload['repository']
     end
+
+    def github
+      settings.github
+    end
+
   end
 end
