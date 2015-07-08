@@ -21,5 +21,6 @@ end
 def hookshot(path, type = 'test', data = {})
   post path, data,
     'X_GITHUB_EVENT' => type,
+    'CONTENT_TYPE' => 'application/json',
     'HTTP_USER_AGENT' => 'Github-Hookshot/b4dc0de'
 end
