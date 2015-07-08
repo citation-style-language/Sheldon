@@ -7,7 +7,7 @@ module Sheldon
 
     attr_accessor :name
 
-    def self.load(name, ext = '.erb')
+    def self.load(name, ext = '.md.erb')
       new File.read(File.join(ROOT, "#{name}#{ext}")), name
     end
 

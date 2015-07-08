@@ -13,13 +13,25 @@ require 'json'
 
 require File.expand_path('../../lib/sheldon', __FILE__)
 
+FIXTURES = File.expand_path('../fixtures', __FILE__)
+
 include Rack::Test::Methods
+
+def fixtures(name)
+  File.read File.join(FIXTURES, name)
+end
+
+def payloads(name)
+  JSON.parse fixtures("#{name}.json")
+end
 
 def app
   Sheldon::Bot
 end
 
 def hookshot(path, type = 'test', data = {})
+  data = payloads(data) unless data.is_a? Hash
+
   post path, data.to_json,
     'X_GITHUB_EVENT' => type,
     'CONTENT_TYPE' => 'application/json',

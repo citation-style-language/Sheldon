@@ -3,6 +3,7 @@ require 'sinatra/config_file'
 require 'octokit'
 
 require './lib/sheldon/github_helper'
+require './lib/sheldon/template'
 
 module Sheldon
   class Github < Sinatra::Base
@@ -26,7 +27,8 @@ module Sheldon
       return 400 unless pull_request?
       return 202 if pull_request_comment.nil?
 
-      # post comment
+      #template = Template.load pull_request_comment
+      #puts template.render pull_request
 
       201
     end

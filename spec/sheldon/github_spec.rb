@@ -14,7 +14,7 @@ module Sheldon
     end
 
     it 'comments on opened pull requests' do
-      hookshot '/pull_request', :pull_request, 'action' => 'opened'
+      hookshot '/pull_request', :pull_request, :pull_request_opened
       last_response.status.must_equal 201
     end
 
