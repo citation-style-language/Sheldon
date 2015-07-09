@@ -6,16 +6,21 @@ rescue LoadError
   # no debugger available
 end
 
+ENV['RACK_ENV'] = 'test'
+
 require 'minitest/autorun'
 require 'minitest/pride'
 require 'rack/test'
 require 'json'
+require 'webmock/minitest'
 
 require File.expand_path('../../lib/sheldon', __FILE__)
 
-FIXTURES = File.expand_path('../fixtures', __FILE__)
+WebMock.disable_net_connect! allow_localhost: true
 
 include Rack::Test::Methods
+
+FIXTURES = File.expand_path('../fixtures', __FILE__)
 
 def fixtures(name)
   File.read File.join(FIXTURES, name)

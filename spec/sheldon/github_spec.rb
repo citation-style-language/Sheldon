@@ -3,6 +3,10 @@ require File.expand_path('../../spec_helper', __FILE__)
 module Sheldon
   describe Github do
 
+    before do
+      stub_request :any, /api\.github\.com/
+    end
+
     it 'accepts only github hookshots' do
       post '/pull_request'
       last_response.status.must_equal 404
@@ -13,10 +17,10 @@ module Sheldon
       last_response.status.must_equal 202
     end
 
-    #it 'comments on opened pull requests' do
-    #  hookshot '/pull_request', :pull_request, :pull_request_opened
-    #  last_response.status.must_equal 201
-    #end
+    it 'comments on opened pull requests' do
+      hookshot '/pull_request', :pull_request, :pull_request_opened
+      last_response.status.must_equal 201
+    end
 
     it 'accepts pings' do
       hookshot '/pull_request', :ping

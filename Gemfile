@@ -10,6 +10,7 @@ group :development, :test do
   gem 'rake', '~>10.0'
   gem 'rack-test', '~>0.6'
   gem 'minitest', '~>5.6'
+  gem 'webmock', '~>1.21'
 end
 
 group :debug do

@@ -8,16 +8,6 @@ require './lib/sheldon/template'
 
 module Sheldon
   class Github < Sinatra::Base
-    configure :development, :test do
-      set :logging, Logger::DEBUG
-      set :protection, true
-    end
-
-    configure :production do
-      set :logging, Logger::INFO
-      set :protection, true
-    end
-
 
     set :root, File.expand_path('../../..', __FILE__)
 
@@ -48,7 +38,8 @@ module Sheldon
         pull_request['number'],
         template.render(pull_request))
 
-      [201, nil, { location: comment.url }]
+      #[201, nil, { location: comment.url }]
+      201
     end
 
   end

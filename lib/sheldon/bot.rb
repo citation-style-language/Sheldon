@@ -3,8 +3,21 @@ require './lib/sheldon/github'
 
 module Sheldon
   class Bot < Sinatra::Base
-    enable :logging
-    enable :protection
+
+    configure :production do
+      set :logging, Logger::INFO
+      enable :protection
+    end
+
+    configure :development do
+      set :logging, Logger::DEBUG
+    end
+
+    configure :development, :test do
+      enable :raise_errors
+      disable :show_exceptions
+    end
+
 
     use Sheldon::Github
 
@@ -17,10 +30,12 @@ module Sheldon
     end
 
     not_found do
+      logger.info "Not found: #{request.url}"
       'Not found. Bazinga!'
     end
 
     error do
+      logger.error "Error: #{env['sinatra.error'].message}"
       "Bazinga! #{env['sinatra.error'].message}"
     end
 
