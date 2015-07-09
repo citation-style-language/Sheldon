@@ -4,6 +4,10 @@ module Sheldon
   module GithubHelper
 
     def hookshot?
+      logger.info request.user_agent
+      logger.info request.media_type
+      logger.info request.env
+
       return false unless request.user_agent =~ /^Github-Hookshot\/\w+/
       return false unless request.media_type == 'application/json'
       true
