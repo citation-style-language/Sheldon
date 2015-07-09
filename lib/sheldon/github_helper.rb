@@ -4,17 +4,13 @@ module Sheldon
   module GithubHelper
 
     def hookshot?
-      puts request.user_agent
-      puts request.media_type
-      puts request.env
-
-      return false unless request.user_agent =~ /^Github-Hookshot\/\w+/
+      return false unless request.user_agent =~ /^GitHub-Hookshot\/\w+/i
       return false unless request.media_type == 'application/json'
       true
     end
 
     def github_event
-      request.env['X_GITHUB_EVENT']
+      request.env['HTTP_X_GITHUB_EVENT']
     end
 
     def github_payload
