@@ -31,14 +31,12 @@ module Sheldon
     helpers GithubHelper
 
     set(:github, Octokit::Client.new(access_token: ENV['GITHUB_ACCESS_TOKEN']))
-    set(:hookshot) { |exp| condition { exp == hookshot? } }
 
+    post '/pull_request' do
+      return 400 unless hookshot?
 
-    before '/pull_request', hookshot: true do
       logger.info "GitHub hookshot #{github_event.inspect} received"
-    end
 
-    post '/pull_request', hookshot: true do
       return 202 if ping?
       return 400 unless pull_request?
 

@@ -18,7 +18,7 @@ module Sheldon
 
     it 'accepts only github hookshots' do
       post '/pull_request'
-      last_response.status.must_equal 404
+      last_response.status.must_equal 400
     end
 
     it 'accepts pull requests' do
