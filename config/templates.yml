@@ -1,0 +1,18 @@
+development: &development
+  templates:
+    pull_request:
+      opened: pull_request_opened
+    build:
+      passed: build_passed
+      failed: build_failed
+
+test:
+  <<: *development
+
+production:
+  templates:
+    pull_request:
+      opened: pull_request_opened
+    build:
+      passed: build_passed
+      failed: build_failed

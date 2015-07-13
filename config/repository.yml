@@ -1,0 +1,10 @@
+development: &development
+  repository:
+    slug: 'inukshuk/styles'
+
+test:
+  <<: *development
+
+production:
+  repository:
+    slug: 'inukshuk/styles'

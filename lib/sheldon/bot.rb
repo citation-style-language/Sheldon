@@ -4,6 +4,7 @@ require 'octokit'
 require 'logger'
 
 require './lib/sheldon/github_helper'
+require './lib/sheldon/travis_ci_helper'
 require './lib/sheldon/template'
 
 module Sheldon
@@ -23,29 +24,40 @@ module Sheldon
       disable :show_exceptions
     end
 
+
     set :root, File.expand_path('../../..', __FILE__)
 
     register Sinatra::ConfigFile
-    config_file 'config/github.yml'
+    config_file 'config/templates.yml'
+    config_file 'config/repository.yml'
 
-    helpers GithubHelper
+    helpers GithubHelper, TravisCiHelper
 
     set(:github, Octokit::Client.new(access_token: ENV['GITHUB_ACCESS_TOKEN']))
+    set(:travis_token, ENV['TRAVIS_USER_TOKEN'])
 
-    post '/pull_request' do
-      return 400 unless hookshot?
+    set(:hookshot) { |exp| condition { exp == hookshot? } }
+    set(:valid_notification) { |exp| condition { exp == valid_notification? } }
 
+
+
+    # --- GitHub Pull Request Hook ---
+
+    before '/pull_request', hookshot: true do
       logger.info "GitHub hookshot #{github_event.inspect} received"
+    end
 
+    post '/pull_request', hookshot: true do
       return 202 if ping?
       return 400 unless pull_request?
 
-      options = settings.pull_request[pull_request_action]
-      return 202 if options.nil?
+      options = settings.templates[:pull_request]
+      return 202 if options.nil? || !options.key?(pull_request_action)
 
-      template = Template.load options['template']
+      template = Template.load options[pull_request_action]
 
-      comment = github.add_comment(
+      #comment = github.add_comment(
+      github.add_comment(
         repository['full_name'],
         pull_request['number'],
         template.render(pull_request))
@@ -54,6 +66,29 @@ module Sheldon
       201
     end
 
+    post '/pull_request' do
+      logger.warn "Invalid GitHub hookshot received: #{request.inspect}"
+      400
+    end
+
+
+    # --- Travis CI build hook ---
+
+    before '/build', valid_notification: true do
+      logger.info 'Travis CI notification received'
+    end
+
+    post '/build', valid_notification: true do
+      201
+    end
+
+    post '/build' do
+      logger.warn "Invalid Travis CI notification received: #{request.inspect}"
+      400
+    end
+
+
+    # --- Other Requests ---
 
     get '/status' do
       'OK'
