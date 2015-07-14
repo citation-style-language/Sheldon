@@ -78,6 +78,7 @@ module Sheldon
     end
 
     post '/build', valid_notification: true do
+      puts travis_payload.inspect
       201
     end
 
