@@ -45,8 +45,13 @@ module Sheldon
 
     describe '/build' do
       it 'accepts valid notifications' do
-        travis_notify '/build'
+        travis_notify '/build', status: 'passed', type: 'pull_request'
         last_response.status.must_equal 201
+      end
+
+      it 'ignores notifications unless for pull requests' do
+        travis_notify '/build'
+        last_response.status.must_equal 202
       end
 
       it 'rejects other notifications' do
