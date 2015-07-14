@@ -13,6 +13,7 @@ require 'minitest/pride'
 require 'rack/test'
 require 'json'
 require 'webmock/minitest'
+require 'digest/sha2'
 
 require File.expand_path('../../lib/sheldon', __FILE__)
 
@@ -41,4 +42,13 @@ def hookshot(path, type = 'test', data = {})
     'HTTP_X_GITHUB_EVENT' => type.to_s,
     'CONTENT_TYPE' => 'application/json',
     'HTTP_USER_AGENT' => 'GitHub-Hookshot/b4dc0de'
+end
+
+def travis_notify(path, data = {}, token = nil)
+  data = payloads(data) unless data.is_a? Hash
+  repo = 'inukshuk/styles'
+
+  post path, { payload: data.to_json },
+    'HTTP_AUTHORIZATION' => Digest::SHA2.new.update("#{repo}#{token}").to_s,
+    'HTTP_TRAVIS_REPO_SLUG' => repo
 end

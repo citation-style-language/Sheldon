@@ -29,7 +29,6 @@ module Sheldon
 
     register Sinatra::ConfigFile
     config_file 'config/templates.yml'
-    config_file 'config/repository.yml'
 
     helpers GithubHelper, TravisCiHelper
 
