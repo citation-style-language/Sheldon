@@ -20,7 +20,7 @@ module Sheldon
     end
 
     def travis_payload
-      @travis_payload ||= JSON.parse request.params[:payload]
+      @travis_payload ||= JSON.parse params[:payload]
     end
   end
 end
