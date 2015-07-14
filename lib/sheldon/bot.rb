@@ -78,7 +78,20 @@ module Sheldon
     end
 
     post '/build', valid_notification: true do
-      puts travis_payload.inspect
+      return 202 unless build_pull_request?
+
+      options = settings.templates[:build]
+      return 202 if options.nil? || !options.key?(build_status)
+
+      template = Template.load options[build_status]
+
+      #comment = github.add_comment(
+      github.add_comment(
+        repo_slug,
+        build_pull_request_number,
+        template.render(travis_payload))
+
+      #[201, nil, { location: comment.url }]
       201
     end
 

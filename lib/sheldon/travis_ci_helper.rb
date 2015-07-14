@@ -22,5 +22,33 @@ module Sheldon
     def travis_payload
       @travis_payload ||= JSON.parse params[:payload]
     end
+
+    def build_pull_request?
+      travis_payload['type'] == 'pull_request'
+    end
+
+    def build_pull_request_number
+      travis_payload['pull_request_number']
+    end
+
+    def build_passed?
+      travis_payload['status'] == 0
+    end
+
+    def build_status
+      if build_passed?
+        build_passed
+      else
+        build_failed
+      end
+    end
+
+    def build_passed
+      'passed'
+    end
+
+    def build_failed
+      'failed'
+    end
   end
 end
