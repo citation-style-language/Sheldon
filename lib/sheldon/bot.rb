@@ -85,7 +85,6 @@ module Sheldon
 
       template = Template.load options[build_status]
 
-      logger.info travis_payload.to_s
       #comment = github.add_comment(
       github.add_comment(
         repo_slug,
