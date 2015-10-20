@@ -4,8 +4,7 @@ module Sheldon
   module TravisCiHelper
 
     def valid_notification?
-      true
-      #digest.to_s == authorization
+      digest.to_s == authorization
     end
 
     def digest
