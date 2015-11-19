@@ -13,7 +13,7 @@ notifications:
 deploy:
   provider: heroku
   api_key:
-    secure: B9JXeCOKOMplNiErpUBizskGYdso5AttU9LjJTCSvYweThEd6BJscBWnqhaDi1f3V4GzR6heVoXFiYnFcu9O4BNjYhcpxhwMsq4PCqvuUR9Fs1XN3JJC5f9imuKLnoQNFZg1MR6B2LIkzxMZGID51uMbFkVRHuiGnVQY0EjmNo0=
+    secure: Rkau0ab7IRDQvdEe+8o3bubDPRHJogADO1NBWJLUNsq0cGqJxWRXqWCpszMbDW++B62Fn7b95vMhRtGVyPRd0H5moPs/iJTQM0P3RtNn0pAibSH1PPEAEyE+Wkv3Fqq+Sy3pOd+I249l+yJ/HcHahQZYL0Lxr0AEss7prOvHZ3U=
   app: shelbot
   on:
     repo: inukshuk/Sheldon
