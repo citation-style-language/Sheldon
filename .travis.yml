@@ -16,4 +16,4 @@ deploy:
     secure: Rkau0ab7IRDQvdEe+8o3bubDPRHJogADO1NBWJLUNsq0cGqJxWRXqWCpszMbDW++B62Fn7b95vMhRtGVyPRd0H5moPs/iJTQM0P3RtNn0pAibSH1PPEAEyE+Wkv3Fqq+Sy3pOd+I249l+yJ/HcHahQZYL0Lxr0AEss7prOvHZ3U=
   app: shelbot
   on:
-    repo: inukshuk/Sheldon
+    repo: citation-style-language/Sheldon
