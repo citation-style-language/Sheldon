@@ -1,0 +1,19 @@
+language: ruby
+bundler_args: "--without debug production"
+sudo: false
+cache: bundler
+rvm:
+- 2.2.3
+notifications:
+  email:
+    recipients:
+    - sylvester@keil.or.at
+    on_success: change
+    on_failure: always
+deploy:
+  provider: heroku
+  api_key:
+    secure: B9JXeCOKOMplNiErpUBizskGYdso5AttU9LjJTCSvYweThEd6BJscBWnqhaDi1f3V4GzR6heVoXFiYnFcu9O4BNjYhcpxhwMsq4PCqvuUR9Fs1XN3JJC5f9imuKLnoQNFZg1MR6B2LIkzxMZGID51uMbFkVRHuiGnVQY0EjmNo0=
+  app: shelbot
+  on:
+    repo: inukshuk/Sheldon
