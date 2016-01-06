@@ -45,7 +45,7 @@ module Sheldon
 
     describe '/build' do
       it 'accepts valid notifications' do
-        travis_notify '/build', status: 0, type: 'pull_request', build_url: ''
+        travis_notify '/build', status: 0, type: 'pull_request', build_url: '', repository: { name: 'styles' }
         last_response.status.must_equal 201
       end
 

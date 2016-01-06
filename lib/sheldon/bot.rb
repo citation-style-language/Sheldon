@@ -53,7 +53,9 @@ module Sheldon
       options = settings.templates[:pull_request]
       return 202 if options.nil? || !options.key?(pull_request_action)
 
-      template = Template.load options[pull_request_action]
+      template = Template.load File.join(
+        repository['name'],
+        options[pull_request_action])
 
       #comment = github.add_comment(
       github.add_comment(
@@ -83,7 +85,9 @@ module Sheldon
       options = settings.templates[:build]
       return 202 if options.nil? || !options.key?(build_status)
 
-      template = Template.load options[build_status]
+      template = Template.load File.join(
+        travis_payload['repository']['name'],
+        options[build_status])
 
       #comment = github.add_comment(
       github.add_comment(
