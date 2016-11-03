@@ -34,6 +34,7 @@ module Sheldon
 
     set(:github, Octokit::Client.new(access_token: ENV['GITHUB_ACCESS_TOKEN']))
     set(:travis_token, ENV['TRAVIS_USER_TOKEN'])
+    set(:travis_api_host, ENV.fetch('TRAVIS_API_HOST', 'https://api.travis-ci.org'))
 
     set(:hookshot) { |exp| condition { exp == hookshot? } }
     set(:valid_notification) { |exp| condition { exp == valid_notification? } }

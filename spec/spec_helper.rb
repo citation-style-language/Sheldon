@@ -13,7 +13,8 @@ require 'minitest/pride'
 require 'rack/test'
 require 'json'
 require 'webmock/minitest'
-require 'digest/sha2'
+require 'openssl'
+require 'base64'
 
 require File.expand_path('../../lib/sheldon', __FILE__)
 
@@ -35,6 +36,16 @@ def app
   Sheldon::Bot
 end
 
+KEY = OpenSSL::PKey::RSA.new 512
+
+def travis_config
+  JSON.generate({
+    config: {
+      notifications: { webhook: { public_key: KEY.public_key.to_pem } }
+    }
+  })
+end
+
 def hookshot(path, type = 'test', data = {})
   data = payloads(data) unless data.is_a? Hash
 
@@ -44,11 +55,13 @@ def hookshot(path, type = 'test', data = {})
     'HTTP_USER_AGENT' => 'GitHub-Hookshot/b4dc0de'
 end
 
-def travis_notify(path, data = {}, token = nil)
+def travis_notify(path, data = {}, tamper = '')
   data = payloads(data) unless data.is_a? Hash
   repo = 'inukshuk/styles'
+  payload = data.to_json
 
-  post path, { payload: data.to_json },
-    'HTTP_AUTHORIZATION' => Digest::SHA2.new.update("#{repo}#{token}").to_s,
+  post path, { payload: payload },
+    'HTTP_SIGNATURE' =>
+      Base64.encode64(KEY.sign(OpenSSL::Digest::SHA1.new, payload + tamper)),
     'HTTP_TRAVIS_REPO_SLUG' => repo
 end
