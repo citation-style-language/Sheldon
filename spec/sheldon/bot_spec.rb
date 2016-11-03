@@ -4,6 +4,8 @@ module Sheldon
   describe Bot do
     before do
       stub_request :any, /api\.github\.com/
+      stub_request(:get, 'https://api.travis-ci.org/config')
+        .to_return(status: 200, body: travis_config)
     end
 
     it 'is ok' do

@@ -1,18 +1,21 @@
-require 'digest/sha2'
+require 'base64'
+require 'faraday'
+require 'openssl'
 
 module Sheldon
   module TravisCiHelper
 
     def valid_notification?
-      digest.to_s == authorization
+      key = OpenSSL::PKey::RSA.new(public_key)
+      key.verify(
+        OpenSSL::Digest::SHA1.new,
+        Base64.decode64(signature),
+        params[:payload]
+      )
     end
 
-    def digest
-      Digest::SHA2.new.update "#{repo_slug}#{settings.travis_token}"
-    end
-
-    def authorization
-      request.env['HTTP_AUTHORIZATION']
+    def signature
+      request.env['HTTP_SIGNATURE']
     end
 
     def repo_slug
@@ -41,6 +44,17 @@ module Sheldon
       else
         build_failed
       end
+    end
+
+    def public_key
+      conn = Faraday.new(url: settings.travis_api_host) do |f|
+        f.adapter Faraday.default_adapter
+      end
+
+      response = conn.get '/config'
+      JSON.parse(response.body)['config']['notifications']['webhook']['public_key']
+    rescue
+      ''
     end
 
     def build_passed
