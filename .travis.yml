@@ -1,9 +1,8 @@
 language: ruby
 bundler_args: "--without debug production"
-sudo: false
 cache: bundler
 rvm:
-- 2.2.4
+- 2.4.1
 notifications:
   email:
     recipients:
