@@ -2,11 +2,11 @@ language: ruby
 bundler_args: "--without debug production"
 cache: bundler
 rvm:
-- 2.4.1
+- 2.6.3
 notifications:
   email:
     recipients:
-    - sylvester@keil.or.at
+    - sylvester@keil.or.atx
     on_success: change
     on_failure: always
 deploy:
