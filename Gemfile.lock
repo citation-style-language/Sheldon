@@ -2,7 +2,6 @@ PATH
   remote: .
   specs:
     sheldon (0.1.17)
-      byebug
       citeproc-ruby
       csl-styles
       diffy
@@ -107,6 +106,7 @@ PLATFORMS
 DEPENDENCIES
   bump
   bundler
+  byebug
   minitest
   rack-test
   rake

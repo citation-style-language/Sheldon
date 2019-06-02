@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest'
   spec.add_development_dependency 'webmock'
   spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'byebug'
 
   spec.add_dependency 'citeproc-ruby'
   spec.add_dependency 'csl-styles'
@@ -42,7 +43,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'sinatra'
   spec.add_dependency 'sinatra-contrib'
   spec.add_dependency 'erubis'
-  spec.add_dependency 'byebug'
   spec.add_dependency 'puma'
   spec.add_dependency 'foreman'
 end
