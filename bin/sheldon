@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+require 'sheldon/travis'
+
+begin
+  sheldon = Sheldon::Chatter.new
+  sheldon.run
+rescue Sheldon::EnvironmentError => err
+  puts err
+  exit(!err.fatal)
+end

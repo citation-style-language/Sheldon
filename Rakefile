@@ -1,5 +1,7 @@
 require 'bundler/setup'
 require 'rake/testtask'
+require "bump/tasks"
+require "bundler/gem_tasks"
 
 task default: [:spec]
 
