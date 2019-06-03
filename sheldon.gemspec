@@ -28,7 +28,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bump'
   spec.add_development_dependency 'rack-test', '~>0.6'
   spec.add_development_dependency 'webmock', '~>2.1'
-  spec.add_development_dependency 'rspec'
 
   # pin versions to old ones so tests run
   spec.add_development_dependency 'rake', '10.5.0'
