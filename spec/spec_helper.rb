@@ -13,7 +13,6 @@ require 'minitest/pride'
 require 'rack/test'
 require 'json'
 require 'webmock/minitest'
-require 'webmock/rspec'
 require 'openssl'
 require 'base64'
 
