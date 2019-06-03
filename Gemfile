@@ -11,7 +11,7 @@ gem 'octokit', '~>4.0'
 gem 'hashdiff', '0.3.7'
 
 group :development, :test do
-  gem 'rake', '~>10.0' # '10.5.0'
+  gem 'rake', '~>10.0'
   gem 'rack-test', '~>0.6'
   gem 'minitest', '~>5.6'
   gem 'webmock', '~>2.1'
