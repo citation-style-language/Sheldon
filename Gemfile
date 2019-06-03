@@ -1,5 +1,4 @@
 ruby '2.6.3'
-#ruby-gemset=sheldon
 source "https://rubygems.org"
 
 gem 'sinatra', '~>1.4'
