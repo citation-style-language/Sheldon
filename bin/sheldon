@@ -28,14 +28,6 @@ module Sheldon
 
   class TravisReport
     def initialize
-      raise EnvironmentError.new(false), 'TRAVIS_PULL_REQUEST is not set' if (ENV['TRAVIS_PULL_REQUEST'] || 'false') == 'false'
-      raise EnvironmentError.new(false), 'Sheldon cannot be run from the master branch' if `git rev-parse --abbrev-ref HEAD`.strip() == 'master'
-      raise EnvironmentError.new, 'TRAVIS_COMMIT_RANGE is not set' if ENV['TRAVIS_COMMIT_RANGE'].to_s == ''
-      raise EnvironmentError.new, 'TRAVIS_REPO_SLUG is not set' if ENV['TRAVIS_REPO_SLUG'].to_s == ''
-      raise EnvironmentError.new, 'TRAVIS_PULL_REQUEST is not a number' unless ENV['TRAVIS_PULL_REQUEST'] =~ /^[0-9]+$/
-      raise EnvironmentError.new, 'TRAVIS_BUILD_ID is not a number' unless ENV['TRAVIS_BUILD_ID'].to_s =~ /^[0-9]+$/
-      raise EnvironmentError.new, 'Sheldon must be ran from the project root' unless File.directory?('.git')
-
       @verbose = false
       OptionParser.new do |opts|
         opts.banner = "Usage: sheldon [options]"
@@ -44,6 +36,23 @@ module Sheldon
           @verbose = v
         end
       end.parse!
+
+      raise EnvironmentError.new(false), 'Sheldon cannot be run from the master branch' if ENV['TRAVIS_BRANCH'].to_s == '' && `git rev-parse --abbrev-ref HEAD`.strip() == 'master'
+
+      if ENV['TRAVIS_EVENT_TYPE'] != 'pull_request'
+        raise EnvironmentError.new, 'TRAVIS_EVENT_TYPE must be "pull_request"' if @verbose
+        return
+      end
+
+      %w{TRAVIS_COMMIT_RANGE TRAVIS_REPO_SLUG}.each{|var|
+        raise EnvironmentError.new, "#{var} is not set" if ENV[var].to_s == ''
+      }
+
+      %w{TRAVIS_BUILD_ID TRAVIS_PULL_REQUEST}.each{|var|
+        raise EnvironmentError.new, "#{var} (#{ENV[var]}) is not a number" unless ENV[var].to_s =~ /^[0-9]+$/
+      }
+
+      raise EnvironmentError.new, 'Sheldon must be ran from the project root' unless File.directory?('.git')
 
       @repo = ENV['TRAVIS_REPO_SLUG']
       @pr = Integer(ENV['TRAVIS_PULL_REQUEST'])
@@ -70,14 +79,7 @@ module Sheldon
 
         end
       }
-    end
 
-    def report(msg)
-      return if msg == ''
-      puts "sheldon:#{msg.to_json} ".split('').collect{|c| "#{c}\b"}.join('')
-    end
-
-    def run
       return if failure()
 
       case @repo.split('/')[1]
@@ -88,6 +90,11 @@ module Sheldon
       end
 
       report(details)
+    end
+
+    def report(msg)
+      return if msg == ''
+      puts "sheldon:#{msg.to_json} ".split('').collect{|c| "#{c}\b"}.join('')
     end
 
     def failure
@@ -194,9 +201,10 @@ module Sheldon
   end
 end
 
+exit(true) if ENV['TRAVIS_BRANCH'] == 'master'
+
 begin
-  sheldon = Sheldon::TravisReport.new
-  sheldon.run
+  Sheldon::TravisReport.new
 rescue Sheldon::EnvironmentError => err
   puts err
   exit(!err.fatal)
