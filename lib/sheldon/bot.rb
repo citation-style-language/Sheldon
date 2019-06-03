@@ -94,7 +94,7 @@ module Sheldon
       github.add_comment(
         repo_slug,
         build_pull_request_number,
-        template.render(travis_payload))
+        template.render(travis_payload.merge({ 'build_details': build_details })))
 
       #[201, nil, { location: comment.url }]
       201

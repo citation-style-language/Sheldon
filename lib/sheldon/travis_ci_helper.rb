@@ -1,6 +1,8 @@
 require 'base64'
 require 'faraday'
 require 'openssl'
+require 'open-uri'
+require 'json'
 
 module Sheldon
   module TravisCiHelper
@@ -44,6 +46,22 @@ module Sheldon
       else
         build_failed
       end
+    end
+
+    def build_details
+      # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
+      # the actual payload is JSONified so that newlines all live on a single line
+      prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
+      details = open(travis_payload['build_url'] + '/log.txt').read.split("\n").detect{|line| line.start_with?(prefix) }
+
+      if details
+        # if found: remove the prefix and un-JSONify
+        return JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1])
+      else
+        return ''
+      end
+    rescue
+      return ''
     end
 
     def public_key
