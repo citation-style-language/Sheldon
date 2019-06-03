@@ -26,14 +26,14 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'bump'
-  spec.add_development_dependency 'rake', '10.5.0'
   spec.add_development_dependency 'rack-test', '~>0.6'
-  spec.add_development_dependency 'minitest', '5.10.1'
   spec.add_development_dependency 'webmock', '~>2.1'
   spec.add_development_dependency 'rspec'
-  spec.add_development_dependency 'byebug', '10.0.2'
 
   # pin versions to old ones so tests run
+  spec.add_development_dependency 'rake', '10.5.0'
+  spec.add_development_dependency 'minitest', '5.10.1'
+  spec.add_development_dependency 'byebug', '10.0.2'
   spec.add_dependency 'addressable', '2.5.2'
   spec.add_dependency 'backports', '3.11.4'
   spec.add_dependency 'bigdecimal', '1.3.0'
