@@ -16,13 +16,12 @@ Gem::Specification.new do |spec|
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   spec.files         = %w{
     bin/sheldon
-    lib/sheldon/travis.rb
     lib/sheldon/version.rb
     sheldon.gemspec
   }
   spec.bindir        = 'bin'
   spec.executables   = ['sheldon']
-  spec.require_paths = ["lib"]
+  spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'bump'
