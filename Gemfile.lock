@@ -2,45 +2,21 @@ PATH
   remote: .
   specs:
     sheldon (0.1.17)
-      addressable (= 2.5.2)
-      backports (= 3.11.4)
-      bigdecimal (= 1.3.0)
       citeproc-ruby
       csl-styles
       diffy
       dotenv
-      erubis (~> 2.7)
-      foreman (~> 0.78)
-      hashdiff (= 0.3.7)
-      json (= 2.0.2)
-      multipart-post (= 2.0.0)
-      net-telnet (= 0.1.1)
-      octokit (= 4.13.0)
-      openssl (= 2.0.3)
       ostruct
-      power_assert (= 0.4.1)
-      psych (= 2.2.2)
-      public_suffix (= 3.0.3)
-      puma (= 3.12.0)
-      rdoc (= 5.0.0)
       reverse_markdown
-      safe_yaml (= 1.0.4)
-      sawyer (= 0.8.1)
-      sinatra (~> 1.4)
-      sinatra-contrib (~> 1.4)
-      test-unit (= 3.2.3)
-      tilt (= 2.0.8)
-      xmlrpc (= 0.2.1)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.5.2)
+    addressable (2.6.0)
       public_suffix (>= 2.0.2, < 4.0)
-    backports (3.11.4)
-    bigdecimal (1.3.0)
+    backports (3.15.0)
     bump (0.8.0)
-    byebug (10.0.2)
+    byebug (11.0.1)
     citeproc (1.0.9)
       namae (~> 1.0)
     citeproc-ruby (1.1.10)
@@ -60,36 +36,30 @@ GEM
     foreman (0.85.0)
       thor (~> 0.19.1)
     hashdiff (0.3.7)
-    json (2.0.2)
     mini_portile2 (2.4.0)
-    minitest (5.10.1)
+    minitest (5.11.3)
     multi_json (1.13.1)
-    multipart-post (2.0.0)
+    multipart-post (2.1.1)
     namae (1.0.1)
-    net-telnet (0.1.1)
     nokogiri (1.10.3)
       mini_portile2 (~> 2.4.0)
-    octokit (4.13.0)
+    octokit (4.14.0)
       sawyer (~> 0.8.0, >= 0.5.3)
-    openssl (2.0.3)
     ostruct (0.1.0)
-    power_assert (0.4.1)
-    psych (2.2.2)
-    public_suffix (3.0.3)
-    puma (3.12.0)
+    public_suffix (3.1.0)
+    puma (3.12.1)
     rack (1.6.11)
     rack-protection (1.5.5)
       rack
     rack-test (0.8.3)
       rack (>= 1.0, < 3)
     rake (10.5.0)
-    rdoc (5.0.0)
     reverse_markdown (1.1.0)
       nokogiri
-    safe_yaml (1.0.4)
-    sawyer (0.8.1)
-      addressable (>= 2.3.5, < 2.6)
-      faraday (~> 0.8, < 1.0)
+    safe_yaml (1.0.5)
+    sawyer (0.8.2)
+      addressable (>= 2.3.5)
+      faraday (> 0.8, < 2.0)
     sinatra (1.4.8)
       rack (~> 1.5)
       rack-protection (~> 1.4)
@@ -101,15 +71,12 @@ GEM
       rack-test
       sinatra (~> 1.4.0)
       tilt (>= 1.3, < 3)
-    test-unit (3.2.3)
-      power_assert
     thor (0.19.4)
-    tilt (2.0.8)
+    tilt (2.0.9)
     webmock (2.3.2)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff
-    xmlrpc (0.2.1)
 
 PLATFORMS
   ruby
@@ -117,12 +84,22 @@ PLATFORMS
 DEPENDENCIES
   bump
   bundler
-  byebug (= 10.0.2)
-  minitest (= 5.10.1)
+  byebug
+  erubis (~> 2.7)
+  foreman (~> 0.78)
+  hashdiff (= 0.3.7)
+  minitest (~> 5.6)
+  octokit (~> 4.0)
+  puma (~> 3.6)
   rack-test (~> 0.6)
-  rake (= 10.5.0)
+  rake (~> 10.0)
   sheldon!
+  sinatra (~> 1.4)
+  sinatra-contrib (~> 1.4)
   webmock (~> 2.1)
+
+RUBY VERSION
+   ruby 2.6.3p62
 
 BUNDLED WITH
    1.17.2
