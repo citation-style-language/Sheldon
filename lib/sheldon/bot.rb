@@ -82,13 +82,12 @@ module Sheldon
 
     post '/build', valid_notification: true do
       logger.info "Travis Build: pull-request = #{build_pull_request?}"
-      logger.info "Travis Build: build-status = #{build_status}"
-      logger.info "Travis Build: template = #{options && options[build_status]}"
-      logger.info "Travis Build: hidden details: #{build_details}"
-
       return 202 unless build_pull_request?
 
       options = settings.templates[:build]
+      logger.info "Travis Build: build-status = #{build_status}"
+      logger.info "Travis Build: template = #{options && options[build_status]}"
+      logger.info "Travis Build: hidden details: #{build_details}"
       return 202 if options.nil? || !options.key?(build_status)
 
       template = Template.load File.join(
