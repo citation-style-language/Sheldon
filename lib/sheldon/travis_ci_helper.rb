@@ -4,6 +4,8 @@ require 'openssl'
 require 'open-uri'
 require 'json'
 require 'logger'
+require 'net/http/post/multipart'
+require 'stringio'
 
 module Sheldon
   module TravisCiHelper
@@ -60,15 +62,19 @@ module Sheldon
 
         begin
           # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
-          # the actual payload is JSONified so that newlines all live on a single line
+          # the actual payload is base64-encoded so that newlines all live on a single line
 
-          log = open(url).read.split("\n")
-          log.each{|line|
-            logger.info "Travis Build: log #{line.inspect}"
-          }
+          log = open(url).read
+
+          uri = URI.parse('https://0x0.st/')
+          Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+            req = Net::HTTP::Post::Multipart.new(uri.path, "file" => UploadIO.new(StringIO.new(log), "text/plain", "travis.txt"))
+            logger.info "copy of the travis log at #{http.request(req).body.inspect}"
+          end
+
           logger.info "Travis Build: log with #{log.length} lines"
 
-          details = log.detect{|line| line.start_with?(prefix) }
+          details = log.split("\n").detect{|line| line.start_with?(prefix) }
           logger.info "Travis Build: hidden details #{details ? '' : 'not '}detected"
 
           # if found: un-hide, remove the prefix and un-base64
