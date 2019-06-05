@@ -6,6 +6,7 @@ module Sheldon
       stub_request :any, /api\.github\.com/
       stub_request(:get, 'https://api.travis-ci.org/config')
         .to_return(status: 200, body: travis_config)
+      stub_request(:get, /api\.travis-ci\.org\/v3\/job\/.*\/log.txt$/).to_return(status: 200, body: '')
     end
 
     it 'is ok' do
