@@ -51,17 +51,33 @@ module Sheldon
 
     def build_details
       if @details.nil?
-        # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
-        # the actual payload is JSONified so that newlines all live on a single line
         prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
-        log = open("https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt").read.split("\n")
-        logger.info "Travis Build: log with #{log.length} lines"
+        url = "https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt"
+        logger.info "Travis Build: get log from #{log}"
 
-        details = log.detect{|line| line.start_with?(prefix) }
-        logger.info "Travis Build: hidden details #{details ? '' : 'not '}detected"
+        # make sure we don't attempt again if we've not been successful before
+        @details = ''
 
-        # if found: un-hide, remove the prefix and un-JSONify
-        @details = details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
+        # https://github.com/pixielabs/letsencrypt-rails-heroku/issues/9
+        5.times{
+          begin
+            # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
+            # the actual payload is JSONified so that newlines all live on a single line
+
+            log = open(url).read.split("\n")
+            logger.info "Travis Build: log with #{log.length} lines"
+
+            details = log.detect{|line| line.start_with?(prefix) }
+            logger.info "Travis Build: hidden details #{details ? '' : 'not '}detected"
+
+            # if found: un-hide, remove the prefix and un-JSONify
+            @details = details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
+            break
+          rescue OpenURI::HTTPError => e
+            logger.info "Failed to load log from #{url}: #{e}"
+            sleep(2)
+          end
+        }
       end
 
       return @details
