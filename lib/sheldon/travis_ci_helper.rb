@@ -49,19 +49,19 @@ module Sheldon
     end
 
     def build_details
-      # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
-      # the actual payload is JSONified so that newlines all live on a single line
-      prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
-      details = open("https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt").read.split("\n").detect{|line| line.start_with?(prefix) }
+      @details ||= begin
+        # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
+        # the actual payload is JSONified so that newlines all live on a single line
+        prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
+        details = open("https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt").read.split("\n").detect{|line| line.start_with?(prefix) }
 
-      if details
-        # if found: remove the prefix and un-JSONify
-        return JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1])
-      else
-        return ''
+        # if found: un-hide, remove the prefix and un-JSONify
+        details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
+      rescue
+        ''
       end
-    rescue
-      return ''
+
+      return @details
     end
 
     def public_key

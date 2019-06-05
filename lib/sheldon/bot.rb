@@ -90,6 +90,8 @@ module Sheldon
         travis_payload['repository']['name'],
         options[build_status])
 
+      logger.info "hidden details: #{build_details}"
+
       #comment = github.add_comment(
       github.add_comment(
         repo_slug,
