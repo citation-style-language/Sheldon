@@ -53,7 +53,7 @@ module Sheldon
       if @details.nil?
         prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
         url = "https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt"
-        logger.info "Travis Build: get log from #{log}"
+        logger.info "Travis Build: get log from #{url}"
 
         # make sure we don't attempt again if we've not been successful before
         @details = ''
