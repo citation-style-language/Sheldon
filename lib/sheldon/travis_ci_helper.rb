@@ -53,7 +53,7 @@ module Sheldon
       if @details.nil?
         prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
         url = "https://api.travis-ci.org/v3/job/#{travis_payload['matrix'][0]['id']}/log.txt"
-        logger.info "Travis Build: get log from #{url}"
+        logger.info "Travis Build: get log from #{url} (#{prefix.inspect})"
 
         # make sure we don't attempt again if we've not been successful before
         @details = ''
@@ -69,8 +69,8 @@ module Sheldon
           details = log.detect{|line| line.start_with?(prefix) }
           logger.info "Travis Build: hidden details #{details ? '' : 'not '}detected"
 
-          # if found: un-hide, remove the prefix and un-JSONify
-          @details = details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
+          # if found: un-hide, remove the prefix and un-base64
+          @details = details ? Base64.decode64(details.gsub("\b", '').split(':', 2)[1].strip) : ''
         rescue OpenURI::HTTPError => e
           logger.info "Failed to load log from #{url}: #{e}"
           @details = ''

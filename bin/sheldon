@@ -94,7 +94,8 @@ module Sheldon
 
     def report(msg)
       return if msg == ''
-      puts "sheldon:#{msg.to_json} ".split('').collect{|c| "#{c}\b"}.join('')
+      # extra space overwrites trailing char
+      puts "sheldon:#{Base64.encode64(msg)}".split('').collect{|c| "#{c}\b"}.join('') + ' '
     end
 
     def failure
