@@ -81,6 +81,11 @@ module Sheldon
     end
 
     post '/build', valid_notification: true do
+      logger.info "Travis Build: pull-request = #{build_pull_request?}"
+      logger.info "Travis Build: build-status = #{build_status}"
+      logger.info "Travis Build: template = #{options && options[build_status]}"
+      logger.info "Travis Build: hidden details: #{build_details}"
+
       return 202 unless build_pull_request?
 
       options = settings.templates[:build]
@@ -89,8 +94,6 @@ module Sheldon
       template = Template.load File.join(
         travis_payload['repository']['name'],
         options[build_status])
-
-      logger.info "hidden details: #{build_details}"
 
       #comment = github.add_comment(
       github.add_comment(
