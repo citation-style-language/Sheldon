@@ -51,6 +51,7 @@ module Sheldon
 
     def build_details
       if @details.nil?
+        logger.info "Travis Build: get log from #{travis_payload.to_json}"
         prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
         url = "https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt"
         logger.info "Travis Build: get log from #{url}"
