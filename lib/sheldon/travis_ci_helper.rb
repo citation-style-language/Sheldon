@@ -50,19 +50,18 @@ module Sheldon
     end
 
     def build_details
-      @details ||= begin
+      if @details.nil?
         # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
         # the actual payload is JSONified so that newlines all live on a single line
         prefix = 'sheldon:'.split('').collect{|c| "#{c}\b"}.join('')
         log = open("https://api.travis-ci.org/v3/job/#{travis_payload['id']}/log.txt").read.split("\n")
         logger.info "Travis Build: log with #{log.length} lines"
+
         details = log.detect{|line| line.start_with?(prefix) }
         logger.info "Travis Build: hidden details #{details ? '' : 'not '}detected"
 
         # if found: un-hide, remove the prefix and un-JSONify
-        details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
-      rescue
-        ''
+        @details = details ? JSON.parse(details.gsub("\b", '').strip.split(':', 2)[1]) : ''
       end
 
       return @details
