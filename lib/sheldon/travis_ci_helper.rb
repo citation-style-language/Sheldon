@@ -63,7 +63,9 @@ module Sheldon
           # the actual payload is JSONified so that newlines all live on a single line
 
           log = open(url).read.split("\n")
-          logger.info "Travis Build: log #{log.inspect}"
+          log.each{|line|
+            logger.info "Travis Build: log #{line.inspect}"
+          }
           logger.info "Travis Build: log with #{log.length} lines"
 
           details = log.detect{|line| line.start_with?(prefix) }
