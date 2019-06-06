@@ -104,8 +104,10 @@ module Sheldon
         return 400
       end
 
+      logger.info "storing build details #{details}"
       key = [:owner, :repo, :id].collect{|k| params[k]}.join('/')
-      $memcache.set(key, details)
+      value = $memcache.set(key, details)
+      logger.info "stored build details for #{key}: #{value}"
       return 201
     end
 
