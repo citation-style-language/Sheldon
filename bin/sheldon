@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "sheldon/version"
+require 'sheldon/hidden_text'
 require 'dotenv/load'
 
 require 'json'
@@ -94,8 +95,7 @@ module Sheldon
 
     def report(msg)
       return if msg == ''
-      # extra space overwrites trailing char
-      puts "sheldon:#{Base64.strict_encode64(msg)}".split('').collect{|c| "#{c}\b"}.join('') + ' '
+      Sheldon::HiddenText.hide(msg)
     end
 
     def failure

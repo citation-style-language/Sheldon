@@ -89,6 +89,7 @@ DEPENDENCIES
   foreman (~> 0.78)
   hashdiff (= 0.3.7)
   minitest (~> 5.6)
+  multipart-post
   octokit (~> 4.0)
   puma (~> 3.6)
   rack-test (~> 0.6)
