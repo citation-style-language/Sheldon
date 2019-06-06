@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sheldon (0.1.25)
+    sheldon (0.1.26)
       citeproc-ruby
       csl-styles
       diffy
