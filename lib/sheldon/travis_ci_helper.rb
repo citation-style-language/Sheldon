@@ -68,7 +68,8 @@ module Sheldon
 
           uri = URI.parse('https://0x0.st/')
           Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-            req = Net::HTTP::Post::Multipart.new(uri.path, "file" => UploadIO.new(StringIO.new(log), "text/plain", "travis.txt"))
+            #req = Net::HTTP::Post::Multipart.new(uri.path, "file" => UploadIO.new(StringIO.new(log), "text/plain", "travis.txt"))
+            req = Net::HTTP::Post::Multipart.new(uri.path, "url" => url)
             logger.info "copy of the travis log at #{http.request(req).body.inspect}"
           end
 
