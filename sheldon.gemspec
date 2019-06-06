@@ -32,4 +32,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'reverse_markdown'
   spec.add_dependency 'dotenv'
   spec.add_dependency 'ostruct'
+  spec.add_dependency 'httparty'
 end

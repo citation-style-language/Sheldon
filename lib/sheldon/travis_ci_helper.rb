@@ -32,6 +32,14 @@ module Sheldon
       @travis_payload ||= JSON.parse params[:payload]
     end
 
+    def travis_ip?
+      ips = JSON.parse(open('https://dnsjson.com/nat.gce-us-central1.travisci.net/A.json').read)['results']['records']
+      client = request.env['HTTP_X_FORWARDED_FOR']
+      travis = ips.include?(client)
+      logger.info "is #{client} in #{ips}? #{travis}"
+      return travis
+    end
+
     def build_pull_request?
       travis_payload['type'] == 'pull_request'
     end
@@ -50,36 +58,6 @@ module Sheldon
       else
         build_failed
       end
-    end
-
-    def build_details
-      if @details.nil?
-        url = "https://api.travis-ci.org/v3/job/#{travis_payload['matrix'][0]['id']}/log.txt"
-        logger.info "Travis Build: get log from #{url}"
-
-        # make sure we don't attempt again if we've not been successful before
-        @details = ''
-
-        begin
-          # the gem part of sheldon hides the detals in the travis log by backspacing over it. It is marked in the log by the hidden prefix 'sheldon:'
-          # the actual payload is base64-encoded so that newlines all live on a single line
-
-          @details = Sheldon::HiddenText.seek(log = open(url).read)
-
-          uri = URI.parse('https://0x0.st/')
-          Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-            req = Net::HTTP::Post::Multipart.new(uri.path, "url" => url)
-            logger.info "copy of the travis log at #{http.request(req).body.inspect}"
-          end
-
-          logger.info "Travis Build: hidden details #{@details.to_s == '' ? 'not ' : ''}detected"
-        rescue OpenURI::HTTPError => e
-          logger.info "Failed to load log from #{url}: #{e}"
-          @details = ''
-        end
-      end
-
-      return @details
     end
 
     def public_key

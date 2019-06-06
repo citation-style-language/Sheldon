@@ -2,10 +2,14 @@ require 'sinatra/base'
 require 'sinatra/config_file'
 require 'octokit'
 require 'logger'
+require 'dalli'
 
 require './lib/sheldon/github_helper'
 require './lib/sheldon/travis_ci_helper'
 require './lib/sheldon/template'
+
+DETAILS_LIMIT = 100 * 1024 # arbitrarily limit build details to 100K
+DETAILS_TIMEOUT = 60 # seconds
 
 module Sheldon
   class Bot < Sinatra::Base
@@ -13,6 +17,15 @@ module Sheldon
     configure :production do
       set :logging, Logger::INFO
       enable :protection
+
+      if ENV['MEMCACHEDCLOUD_SERVERS']
+        $memcache = Dalli::Client.new(
+          ENV['MEMCACHEDCLOUD_SERVERS'].split(','),
+          username: ENV['MEMCACHEDCLOUD_USERNAME'],
+          password: ENV['MEMCACHEDCLOUD_PASSWORD'],
+          expires_in: DETAILS_TIMEOUT
+        )
+      end
     end
 
     configure :development do
@@ -73,6 +86,28 @@ module Sheldon
       400
     end
 
+    put '/details/:owner/:repo/:id' do
+      if ! travis_ip?
+        logger.warn "Connection from outside Travis: #{request.inspect}"
+        return 400
+      end
+
+      if params[:id] !~ /^[0-9]+$/
+        logger.warn "Invalid build details received: #{request.inspect}"
+        return 400
+      end
+
+      details = request.body.read.to_s
+
+      if details.length > DETAILS_LIMIT
+        logger.warn "Build details too large: #{details.length}"
+        return 400
+      end
+
+      key = [:owner, :repo, :id].collect{|k| params[k]}.join('/')
+      $memcache.set(key, details)
+      return 201
+    end
 
     # --- Travis CI build hook ---
 
@@ -84,10 +119,12 @@ module Sheldon
       logger.info "Travis Build: pull-request = #{build_pull_request?}"
       return 202 unless build_pull_request?
 
+      build_details = $memcache ? $memcache.get("#{travis_payload['repository']['full_name']}/#{travis_payload['id']}") : ''
+
       options = settings.templates[:build]
       logger.info "Travis Build: build-status = #{build_status}"
       logger.info "Travis Build: template = #{options && options[build_status]}"
-      logger.info "Travis Build: hidden details: #{build_details}"
+      logger.info "Travis Build: details: #{build_details}"
       return 202 if options.nil? || !options.key?(build_status)
 
       template = Template.load File.join(
@@ -108,7 +145,6 @@ module Sheldon
       logger.warn "Invalid Travis CI notification received: #{request.inspect}"
       400
     end
-
 
     # --- Other Requests ---
 

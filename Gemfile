@@ -5,7 +5,7 @@ gem 'sinatra', '~>1.4'
 gem 'sinatra-contrib', '~>1.4'
 gem 'erubis', '~>2.7'
 gem 'octokit', '~>4.0'
-gem 'multipart-post'
+gem 'dalli'
 
 # newer hashdiff has namespace conflict
 gem 'hashdiff', '0.3.7'

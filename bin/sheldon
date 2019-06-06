@@ -14,6 +14,8 @@ require 'diffy'
 require 'open-uri'
 require 'optparse'
 require 'ostruct'
+require 'yaml'
+require 'httparty'
 
 module Sheldon
   Asset = Struct.new(:path, :source, keyword_init: true)
@@ -39,6 +41,8 @@ module Sheldon
       end.parse!
 
       raise EnvironmentError.new(false), 'Sheldon cannot be run from the master branch' if ENV['TRAVIS_PULL_REQUEST_BRANCH'].to_s == '' && `git rev-parse --abbrev-ref HEAD`.strip() == 'master'
+
+      @webhook = YAML.load_file('.travis.yml')['notifications']['webhooks']['urls'].detect{|url| url.end_with?('/build').sub(/build$/, '')
 
       if ENV['TRAVIS_EVENT_TYPE'] != 'pull_request'
         raise EnvironmentError.new, 'TRAVIS_EVENT_TYPE must be "pull_request"' if @verbose
@@ -95,7 +99,7 @@ module Sheldon
 
     def report(msg)
       return if msg == ''
-      Sheldon::HiddenText.hide(msg)
+      HTTParty.put("#{@webhook}/#{@repo}/#{@build}", body: msg)
     end
 
     def failure
