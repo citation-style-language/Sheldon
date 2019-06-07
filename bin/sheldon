@@ -15,7 +15,7 @@ require 'open-uri'
 require 'optparse'
 require 'ostruct'
 require 'yaml'
-require 'httparty'
+require 'net/http'
 
 module Sheldon
   Asset = Struct.new(:path, :source, keyword_init: true)
@@ -99,12 +99,9 @@ module Sheldon
 
     def report(msg)
       return if msg == ''
-      HTTParty.put("#{@webhook}/#{@repo}/#{@build}",
-        body: msg.encode('utf-8'),
-        headers: {
-          'Content-Type' => 'Content-Type: text/plain; charset=UTF-8'
-        }
-      )
+
+      uri = URI.parse("#{@webhook}/#{@repo}/#{@build}")
+      Net::HTTP.new(uri.host, uri.port, use_ssl: true).send_request('PUT', uri.path, msg.encode('utf-8'), { 'Content-Type' => 'Content-Type: text/plain; charset=UTF-8' })
     end
 
     def failure
