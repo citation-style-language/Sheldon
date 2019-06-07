@@ -99,7 +99,12 @@ module Sheldon
 
     def report(msg)
       return if msg == ''
-      HTTParty.put("#{@webhook}/#{@repo}/#{@build}", body: msg)
+      HTTParty.put("#{@webhook}/#{@repo}/#{@build}",
+        body: msg.encode('utf-8'),
+        headers: {
+          'Content-Type' => 'Content-Type: text/plain; charset=UTF-8'
+        }
+      )
     end
 
     def failure
