@@ -107,7 +107,6 @@ module Sheldon
 
       key = [:owner, :repo, :id].collect{|k| params[k]}.join('/')
       value = $memcache.set(key, details)
-      logger.info "stored build details for #{key}: #{value}"
       return 201
     end
 
@@ -118,21 +117,16 @@ module Sheldon
     end
 
     post '/build', valid_notification: true do
-      logger.info "Travis Build: pull-request = #{build_pull_request?}"
       return 202 unless build_pull_request?
 
       if $memcache
         repo = travis_payload['repository']
         key = [repo['owner_name'], repo['name'], travis_payload['id']].join('/')
-        logger.info "getting build details for #{key}"
         build_details = $memcache.get(key)
       else
         build_details = ''
       end
       options = settings.templates[:build]
-      logger.info "Travis Build: build-status = #{build_status}"
-      logger.info "Travis Build: template = #{options && options[build_status]}"
-      logger.info "Travis Build: details: #{build_details}"
       return 202 if options.nil? || !options.key?(build_status)
 
       template = Template.load File.join(
