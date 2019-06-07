@@ -6,8 +6,6 @@ module Sheldon
       stub_request :any, /api\.github\.com/
       stub_request(:get, 'https://api.travis-ci.org/config')
         .to_return(status: 200, body: travis_config)
-      stub_request(:get, /api\.travis-ci\.org\/v3\/job\/.*\/log.txt$/).to_return(status: 200, body: '')
-      stub_request(:post, /0x0/).to_return(status: 200, body: '')
     end
 
     it 'is ok' do
@@ -49,7 +47,7 @@ module Sheldon
 
     describe '/build' do
       it 'accepts valid notifications' do
-        travis_notify '/build', status: 0, type: 'pull_request', build_url: '', repository: { name: 'styles' }, matrix: [ { id: 0 } ]
+        travis_notify '/build', status: 0, type: 'pull_request', build_url: '', repository: { name: 'styles' }
         last_response.status.must_equal 201
       end
 
