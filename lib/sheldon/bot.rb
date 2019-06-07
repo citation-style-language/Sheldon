@@ -97,7 +97,7 @@ module Sheldon
         return 400
       end
 
-      details = request.body.read.to_s
+      details = request.body.read.encode('utf-8')
 
       if details.length > DETAILS_LIMIT
         logger.warn "Build details too large: #{details.length}"
