@@ -4,9 +4,6 @@ require 'openssl'
 require 'open-uri'
 require 'json'
 require 'logger'
-require 'net/http/post/multipart'
-require 'stringio'
-require 'sheldon/hidden_text'
 
 module Sheldon
   module TravisCiHelper
