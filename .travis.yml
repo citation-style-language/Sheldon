@@ -6,7 +6,7 @@ rvm:
 notifications:
   email:
     recipients:
-    - sylvester@keil.or.atx
+    - sylvester@keil.or.at
     on_success: change
     on_failure: always
 deploy:
