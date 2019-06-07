@@ -5,9 +5,10 @@ assumes a few things about the environment it's ran in, most of
 which will automatically be set up correctly when ran on Travis
 (which is where it will usually run).
 
-## Environment variables
+Sheldon requires the heroku memcached add-on.
 
-* `GITHUB_TOKEN` must be set manually on each travis project that uses it. Sheldon will post comments under the account tied to this token. Recommended to use a dedicated bot account. The account that this token is tied to must have comment access on the repo on which the Travis tests run.
+## Environment variables for submitting the build details to Sheldon, to be ran on the styles/locales REPO
+
 * `TRAVIS_PULL_REQUEST` is the number of the pull request/issue. Set by Travis.
 * `TRAVIS_COMMIT_RANGE` is the range of commits included in the PR. Set by Travis.
 * `TRAVIS_REPO_SLUG` is the repo being tested. Set by Travis.
@@ -16,7 +17,6 @@ which will automatically be set up correctly when ran on Travis
 example `.env` for local testing:
 
 ```
-GITHUB_TOKEN=...
 TRAVIS_PULL_REQUEST=1
 TRAVIS_COMMIT_RANGE=master
 TRAVIS_REPO_SLUG=clone/styles
