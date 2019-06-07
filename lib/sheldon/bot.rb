@@ -97,7 +97,8 @@ module Sheldon
         return 400
       end
 
-      details = request.body.read.encode('utf-8')
+      # WHY Sinatra?! I send the right content-type!
+      details = request.body.read.force_encoding('utf-8')
 
       if details.length > DETAILS_LIMIT
         logger.warn "Build details too large: #{details.length}"
