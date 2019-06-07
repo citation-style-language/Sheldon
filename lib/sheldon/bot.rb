@@ -121,7 +121,8 @@ module Sheldon
       return 202 unless build_pull_request?
 
       if $memcache
-        key = "#{travis_payload['repository']['full_name']}/#{travis_payload['id']}"
+        repo = travis_payload['repository']
+        key = [repo['owner_name'], repo['name'], travis_payload['id']].join('/')
         logger.info "getting build details for #{key}"
         build_details = $memcache.get(key)
       else
