@@ -1,3 +1,5 @@
 vendor
 .bundle
 .access_token
+.env
+pkg

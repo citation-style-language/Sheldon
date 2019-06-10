@@ -1,0 +1,222 @@
+#!/usr/bin/env ruby
+
+require "sheldon/version"
+require 'sheldon/hidden_text'
+require 'dotenv/load'
+
+require 'json'
+require 'base64'
+require 'cgi'
+require 'citeproc'
+require 'csl'
+require 'csl/styles'
+require 'diffy'
+require 'open-uri'
+require 'optparse'
+require 'ostruct'
+require 'yaml'
+require 'net/http'
+
+module Sheldon
+  Asset = Struct.new(:path, :source, keyword_init: true)
+  Style = Struct.new(:path, :baseline, keyword_init: true)
+
+  class EnvironmentError < StandardError
+    attr_reader :fatal
+
+    def initialize(fatal = true)
+      @fatal = fatal
+    end
+  end
+
+  class TravisReport
+    def initialize
+      @verbose = false
+      OptionParser.new do |opts|
+        opts.banner = "Usage: sheldon [options]"
+
+        opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
+          @verbose = v
+        end
+      end.parse!
+
+      raise EnvironmentError.new(false), 'Sheldon cannot be run from the master branch' if ENV['TRAVIS_PULL_REQUEST_BRANCH'].to_s == '' && `git rev-parse --abbrev-ref HEAD`.strip() == 'master'
+
+      @webhook = YAML.load_file('.travis.yml')['notifications']['webhooks']['urls'].detect{|url| url.end_with?('/build') }.sub(/build$/, 'details')
+
+      if ENV['TRAVIS_EVENT_TYPE'] != 'pull_request'
+        raise EnvironmentError.new, 'TRAVIS_EVENT_TYPE must be "pull_request"' if @verbose
+        return
+      end
+
+      %w{TRAVIS_COMMIT_RANGE TRAVIS_REPO_SLUG}.each{|var|
+        raise EnvironmentError.new, "#{var} is not set" if ENV[var].to_s == ''
+      }
+
+      %w{TRAVIS_BUILD_ID TRAVIS_PULL_REQUEST}.each{|var|
+        raise EnvironmentError.new, "#{var} (#{ENV[var]}) is not a number" unless ENV[var].to_s =~ /^[0-9]+$/
+      }
+
+      raise EnvironmentError.new, 'Sheldon must be ran from the project root' unless File.directory?('.git')
+
+      @repo = ENV['TRAVIS_REPO_SLUG']
+      @pr = Integer(ENV['TRAVIS_PULL_REQUEST'])
+      @build = Integer(ENV['TRAVIS_BUILD_ID'])
+
+      @changed = []
+      `git diff --name-status $TRAVIS_COMMIT_RANGE`.split(/\n/).each{|change|
+        case change[0]
+          when 'M', 'A'
+            path = change.split(/\t/)[1]
+            @changed << Asset.new(path: path, source: change[0] == 'M' ? path : nil )
+            puts "Changed: #{path}" if @verbose
+
+          when 'D'
+            next
+
+          when 'R'
+            action, from, to = change.split(/\t/)
+            @changed << Asset.new(path: to, source: from)
+            puts "Renamed: #{to}" if @verbose
+
+          else
+            throw "Unexpected change of type #{change[0]}"
+
+        end
+      }
+
+      return if failure()
+
+      case @repo.split('/')[1]
+        when 'styles'
+          details = styles_passed()
+        when 'locales'
+          details = locales_passed()
+      end
+
+      report(details)
+    end
+
+    def report(msg)
+      return if msg == ''
+
+      uri = URI.parse("#{@webhook}/#{@repo}/#{@build}")
+      Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+        req = Net::HTTP::Put.new(uri.path, { 'Content-Type' => 'Content-Type: text/plain; charset=UTF-8' })
+        req.body = msg.encode('utf-8')
+        http.request(req)
+      end
+    end
+
+    def failure
+      return false unless File.file?('spec/sheldon/travis.json')
+      travis = JSON.load(File.open('spec/sheldon/travis.json'))
+
+      failures = []
+      travis['examples'].each{|ex|
+        next if ex['status'] == 'passed'
+
+        failures << ''
+        failures[-1] += '<b>' + CGI::escapeHTML(ex['full_description'].gsub(/\e\[([;\d]+)?m/, '')) + '</b>'
+        failures[-1] += "\n```\n" + ex['exception']['message'].gsub(/\e\[([;\d]+)?m/, '').strip() + "\n```\n"
+      }
+
+      if failures.length == 0
+        puts "No failures found" if @verbose
+        return false
+      end
+
+      puts "#{failures.length} failures found" if @verbose
+
+      report("<details><summary>#{failures.length} test#{failures.length == 1 ? '' : 's'} failed</summary>\n\n#{failures.join("\n")}\n\n</details>")
+      return true
+    end
+
+    def styles_passed
+      styles = @changed.select{|asset| asset.path.end_with?('.csl') }.collect{|asset| Style.new(path: asset.path, baseline: asset.source && `git show master:#{asset.source}`) }
+      if styles.empty?
+        puts "No styles changed" if @verbose
+        return
+      end
+      puts "#{styles.length} styles changed" if @verbose
+
+      comments = ''
+
+      styles.sort!{|a, b|
+        da = File.dirname(a.path)
+        db = File.dirname(b.path)
+        if da.length == db.length
+          # they're both dependents, or both independents, sort on name
+          a.path <=> b.path
+        else
+          # if one is dependent and the other is not, prioritize independents at the root level
+          da.length <=> db.length
+        end
+      }
+      max = 10
+      if styles.length > max
+        comments = "#{styles.length} styles changed, showing #{max}\n\n"
+        styles = styles.take(max)
+      end
+
+      items = JSON.load(File.open('spec/sheldon/items.json'))
+
+      styles.each{|style|
+        comments += '<details>'
+
+        rendered = render(items, style.path)
+        baseline = style.baseline ? render(items, style.baseline) : nil
+
+        if baseline && rendered == baseline
+          status = 'modified style; unchanged output for sample items'
+        elsif baseline
+          status = 'modified style'
+        else
+          status = 'new'
+        end
+
+        comments += "<summary>#{style.path} (#{status})</summary>\n"
+        comments += "<blockquote>#{rendered}</blockquote>\n"
+
+        if baseline && baseline != rendered
+          comments += "\n```diff\n"
+          comments += Diffy::Diff.new(baseline, rendered).to_s
+          comments += "\n```\n"
+        end
+
+        comments += '</details>'
+      }
+
+      return comments
+    end
+
+    def locales_passed
+      return ''
+    end
+
+    def render(items, style)
+      result = ''
+      cp = CiteProc::Processor.new(style: style, format: 'html')
+      cp.import(items)
+
+      items.each_slice(2){|citation|
+        result += cp.process(citation.map{|i| { 'id' => i['id'] } }) + "<br/>\n"
+      }
+
+      result += "<hr/>\n"
+
+      cp.bibliography.each{|line| result += line + "<br/>\n" }
+
+      return result
+    end
+  end
+end
+
+exit(true) if ENV['TRAVIS_PULL_REQUEST_BRANCH'] == 'master'
+
+begin
+  Sheldon::TravisReport.new
+rescue Sheldon::EnvironmentError => err
+  puts err
+  exit(!err.fatal)
+end

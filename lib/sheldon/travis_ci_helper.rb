@@ -1,6 +1,9 @@
 require 'base64'
 require 'faraday'
 require 'openssl'
+require 'open-uri'
+require 'json'
+require 'logger'
 
 module Sheldon
   module TravisCiHelper
@@ -24,6 +27,14 @@ module Sheldon
 
     def travis_payload
       @travis_payload ||= JSON.parse params[:payload]
+    end
+
+    def travis_ip?
+      ips = JSON.parse(open('https://dnsjson.com/nat.gce-us-central1.travisci.net/A.json').read)['results']['records']
+      client = request.env['HTTP_X_FORWARDED_FOR']
+      travis = ips.include?(client)
+      logger.info "is #{client} in #{ips}? #{travis}"
+      return travis
     end
 
     def build_pull_request?
