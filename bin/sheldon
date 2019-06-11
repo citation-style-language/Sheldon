@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require "sheldon/version"
-require 'sheldon/hidden_text'
 require 'dotenv/load'
 
 require 'json'
