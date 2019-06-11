@@ -1,3 +1,3 @@
 module Sheldon
-  VERSION = "0.1.33"
+  VERSION = "1.0.0"
 end
