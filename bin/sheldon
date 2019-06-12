@@ -91,6 +91,8 @@ module Sheldon
           details = styles_passed()
         when 'locales'
           details = locales_passed()
+        else
+          raise ValueError("Unexpected repo #{@repo}")
       end
 
       report(details)
@@ -135,7 +137,7 @@ module Sheldon
       styles = @changed.select{|asset| asset.path.end_with?('.csl') }.collect{|asset| Style.new(path: asset.path, baseline: asset.source && `git show master:#{asset.source}`) }
       if styles.empty?
         puts "No styles changed" if @verbose
-        return
+        return ''
       end
       puts "#{styles.length} styles changed" if @verbose
 
