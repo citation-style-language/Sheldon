@@ -15,10 +15,11 @@ require 'optparse'
 require 'ostruct'
 require 'yaml'
 require 'net/http'
+require 'nokogiri'
 
 module Sheldon
   Asset = Struct.new(:path, :source, keyword_init: true)
-  Style = Struct.new(:path, :baseline, keyword_init: true)
+  Style = Struct.new(:path, :baseline, :default_locale, keyword_init: true)
 
   class EnvironmentError < StandardError
     attr_reader :fatal
@@ -133,6 +134,11 @@ module Sheldon
       return true
     end
 
+    def default_locale(style)
+      csl = Nokogiri::XML(style)
+      return csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
+    end
+
     def styles_passed
       styles = @changed.select{|asset| asset.path.end_with?('.csl') }.collect{|asset| Style.new(path: asset.path, baseline: asset.source && `git show master:#{asset.source}`) }
       if styles.empty?
@@ -154,30 +160,39 @@ module Sheldon
           da.length <=> db.length
         end
       }
-      max = 10
-      if styles.length > max
-        comments = "#{styles.length} styles changed, showing #{max}\n\n"
-        styles = styles.take(max)
-      end
+      max = Integer(ENV['SHELDON_CHANGED_SHOW_MAX'] || 10)
+      comments = "#{styles.length} styles changed, showing #{max}\n\n" if styles.length > max
 
       items = JSON.load(File.open('spec/sheldon/items.json'))
 
-      styles.each{|style|
-        comments += '<details>'
+      styles.each_with_index{|style, i|
+        File.open(style.path) { |f| style.default_locale = default_locale(f) }
 
-        rendered = render(items, style.path)
-        baseline = style.baseline ? render(items, style.baseline) : nil
+        begin
+          rendered = render(items, style.path, style.default_locale)
+          baseline = style.baseline ? render(items, style.baseline, default_locale(style.baseline)) : nil
+        rescue
+          rendered = nil
+        end
+
+        next if rendered && i >= max
+
+        baseline = nil if rendered.nil?
+
+        comments += '<details>'
 
         if baseline && rendered == baseline
           status = 'modified style; unchanged output for sample items'
         elsif baseline
           status = 'modified style'
-        else
+        elsif rendered
           status = 'new'
+        else
+          status = 'rendering failure'
         end
 
         comments += "<summary>#{style.path} (#{status})</summary>\n"
-        comments += "<blockquote>#{rendered}</blockquote>\n"
+        comments += "<blockquote>#{rendered}</blockquote>\n" if rendered
 
         if baseline && baseline != rendered
           comments += "\n```diff\n"
@@ -188,6 +203,7 @@ module Sheldon
         comments += '</details>'
       }
 
+      puts comments if @verbose
       return comments
     end
 
@@ -195,18 +211,23 @@ module Sheldon
       return ''
     end
 
-    def render(items, style)
+    def render(items, style, locale)
+      locale = File.join(CSL::Locale.root, "locales-#{locale}.xml") if locale
+      puts ({ style: (style =~ /^</ ? :baseline : style), locale: locale }).inspect if @verbose
+
       result = ''
-      cp = CiteProc::Processor.new(style: style, format: 'html')
+      cp = CiteProc::Processor.new(style: style, locale: locale, format: 'html')
       cp.import(items)
 
       items.each_slice(2){|citation|
         result += cp.process(citation.map{|i| { 'id' => i['id'] } }) + "<br/>\n"
       }
 
-      result += "<hr/>\n"
-
-      cp.bibliography.each{|line| result += line + "<br/>\n" }
+      bibliography = cp.bibliography
+      if bibliography
+        result += "<hr/>\n"
+        bibliography.each{|line| result += line + "<br/>\n" }
+      end
 
       return result
     end
