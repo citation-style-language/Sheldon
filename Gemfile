@@ -23,7 +23,7 @@ group :debug do
 end
 
 group :production do
-  gem 'puma', '~>3.6'
+  gem 'puma', '~>4.3'
   gem 'foreman', '~>0.78'
 end
 
