@@ -30,7 +30,7 @@ module Sheldon
     end
 
     def travis_ip?
-      ips = JSON.parse(open('https://dnsjson.com/nat.gce-us-central1.travisci.net/A.json').read)['results']['records']
+      ips = JSON.parse(open('https://dnsjson.com/nat.travisci.net/A.json').read)['results']['records']
       client = request.env['HTTP_X_FORWARDED_FOR']
       travis = ips.include?(client)
       logger.info "is #{client} in #{ips}? #{travis}"
