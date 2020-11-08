@@ -9,6 +9,8 @@ module Sheldon
   module TravisCiHelper
 
     def valid_notification?
+      print ">>signature>>" + signature + "<<"
+      print ">>payload>>" + params[:payload] + "<<"
       key = OpenSSL::PKey::RSA.new(public_key)
       key.verify(
         OpenSSL::Digest::SHA1.new,
@@ -63,6 +65,7 @@ module Sheldon
       end
 
       response = conn.get '/config'
+      puts ">>pubkey>>" + JSON.parse(response.body)['config']['notifications']['webhook']['public_key'] + "<<"
       JSON.parse(response.body)['config']['notifications']['webhook']['public_key']
     rescue
       ''
