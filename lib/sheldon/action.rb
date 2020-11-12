@@ -194,5 +194,35 @@ module Sheldon
       puts comments if @verbose
       return comments
     end
+
+    def failure
+      return false unless File.file?('spec/sheldon/ci.json')
+      travis = JSON.load(File.open('spec/sheldon/ci.json'))
+
+      failures = []
+      travis['examples'].each{|ex|
+        next if ex['status'] == 'passed'
+
+        failures << ''
+        failures[-1] += '<b>' + CGI::escapeHTML(ex['full_description'].gsub(/\e\[([;\d]+)?m/, '')) + '</b>'
+        failures[-1] += "\n```\n" + ex['exception']['message'].gsub(/\e\[([;\d]+)?m/, '').strip() + "\n```\n"
+      }
+
+      if failures.length == 0
+        puts "No failures found" if @verbose
+        return false
+      end
+
+      puts "#{failures.length} failures found" if @verbose
+
+      @github.add_comment(ENV['GITHUB_REPOSITORY'], @event.number, "<details><summary>#{failures.length} test#{failures.length == 1 ? '' : 's'} failed</summary>\n\n#{failures.join("\n")}\n\n</details>")
+      return true
+    end
+
+    def default_locale(style)
+      csl = Nokogiri::XML(style)
+      return csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
+    end
+
   end
 end
