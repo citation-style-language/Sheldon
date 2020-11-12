@@ -234,11 +234,16 @@ module Sheldon
   end
 end
 
-exit(true) if ENV['TRAVIS_PULL_REQUEST_BRANCH'] == 'master'
+if ENV['GITHUB_WORKFLOW']
+  require 'sheldon/action'
+  GitHubAction.new
+else
+  exit(true) if ENV['TRAVIS_PULL_REQUEST_BRANCH'] == 'master'
 
-begin
-  Sheldon::TravisReport.new
-rescue Sheldon::EnvironmentError => err
-  puts err
-  exit(!err.fatal)
+  begin
+    Sheldon::TravisReport.new
+  rescue Sheldon::EnvironmentError => err
+    puts err
+    exit(!err.fatal)
+  end
 end
