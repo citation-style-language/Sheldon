@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
     bin/sheldon
     lib/sheldon/version.rb
     sheldon.gemspec
+    templates
   }
   spec.bindir        = 'bin'
   spec.executables   = ['sheldon']
@@ -33,4 +34,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'dotenv'
   spec.add_dependency 'ostruct'
   spec.add_dependency 'nokogiri'
+  spec.add_dependency 'erubis', '~>2.7'
+  spec.add_dependency 'octokit', '~>4.0'
+  spec.add_dependency 'git_diff'
+  spec.add_dependency 'faraday'
+  spec.add_dependency 'faraday_middleware'
+  # newer hashdiff has namespace conflict
+  spec.add_dependency 'hashdiff', '0.3.7'
 end

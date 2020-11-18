@@ -1,244 +1,309 @@
 #!/usr/bin/env ruby
 
-require "sheldon/version"
-require 'dotenv/load'
-
+require 'octokit'
 require 'json'
-require 'base64'
+require 'ostruct'
+require 'faraday'
+require 'faraday_middleware'
+require 'optparse'
+require 'erubis'
+require 'nokogiri'
 require 'cgi'
 require 'citeproc'
 require 'csl'
 require 'csl/styles'
 require 'diffy'
-require 'open-uri'
-require 'optparse'
-require 'ostruct'
-require 'yaml'
-require 'net/http'
-require 'nokogiri'
+require 'git_diff'
+require 'base64'
 
-module Sheldon
-  Asset = Struct.new(:path, :source, keyword_init: true)
-  Style = Struct.new(:path, :baseline, :default_locale, keyword_init: true)
+Asset = Struct.new(:path, :source, keyword_init: true)
+Style = Struct.new(:path, :baseline, :default_locale, keyword_init: true)
 
-  class EnvironmentError < StandardError
-    attr_reader :fatal
+class Template
+  ROOT = File.expand_path('../../templates', __FILE__)
+  attr_accessor :name
 
-    def initialize(fatal = true)
-      @fatal = fatal
+  def self.load(name, ext = '.md.erb')
+    new File.read(File.join(ROOT, "#{name}#{ext}")), name
+  end
+
+  def initialize(text, name = nil)
+    @erb, @name = Erubis::Eruby.new(text), name
+  end
+
+  def render(locals = {})
+    @erb.result(locals)
+  end
+end
+
+class GitHubAction
+  def initialize
+    @token = nil
+    @verbose = false
+    @action = nil
+    @release = nil
+
+    actions = %w{welcome apply report}
+    begin
+      optparse = OptionParser.new do |opts|
+        opts.banner = "Usage: sheldon [options]"
+        actions.each{|action|
+          opts.on("--#{action}") do |v|
+            raise OptionParser::InvalidOption.new("Can't do both #{@action} and #{action}") if @action
+            @action = action if v
+          end
+        }
+        opts.on('--token TOKEN', 'GitHub token') do |v|
+          @token = v
+        end
+        opts.on('--release DIR', 'update timestamps for released files') do |v|
+          @release = v
+        end
+        opts.on('-v', '--[no-]verbose', 'Verbose logging') do |v|
+          @verbose = v
+        end
+      end
+      optparse.parse!
+      raise OptionParser::MissingArgument.new('token') if @action and not @token
+      raise OptionParser::MissingArgument.new((actions + ['release']).join('/')) unless @action or @release
+      raise OptionParser::InvalidOption.new("#{@action}+release") if @action and @release
+    rescue OptionParser::InvalidOption, OptionParser::MissingArgument
+      puts $!.to_s
+      puts optparse
+      exit
+    end
+
+    @github = Octokit::Client.new(access_token: @token)
+    @event = JSON.load(File.read(ENV['GITHUB_EVENT_PATH']))
+
+    if @release
+      raise "release can only be performed on a push" unless ENV['GITHUB_EVENT_NAME'] == 'push'
+      self.release()
+      exit
+    end
+
+    raise "#{@action} can only be performed on a pull request" unless ENV['GITHUB_EVENT_NAME'] == 'pull_request_target'
+
+    @repo = ENV['GITHUB_REPOSITORY'].split('/').last
+
+    conn = Faraday.new() do |f|
+      f.use FaradayMiddleware::FollowRedirects, limit: 5
+      f.adapter Faraday.default_adapter
+    end
+    @patch = conn.get(@event['pull_request']['diff_url']).body
+    allowed = @repo == 'styles' ? '.csl' : '.xml'
+    @diff = []
+    GitDiff.from_string(@patch).files.each{|f|
+      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !f.b_path.end_with?(allowed)
+
+      if f.a_path == f.b_path or f.a_path == '/dev/null' # modified or created
+        @diff << Asset.new(path: f.b_path, source: f.a_path == '/dev/null' ? nil : f.a_path)
+        puts "#{f.a_path == '/dev/null' ? 'Created' : 'Modified'}: #{f.b_path}" if @verbose
+      elsif f.b_path == '/dev/null' # deleted
+        @diff << Asset.new(source: f.a_path)
+        puts "Deleted: #{f.a_path}" if @verbose
+      else # renamed
+        @diff << Asset.new(path: f.b_path, source: f.a_path)
+        puts "Renamed #{f.a_path} => #{f.b_path}" if @verbose
+      end
+    }
+
+    case @action
+      when 'welcome'
+        self.welcome()
+      when 'apply'
+        self.apply()
+      when 'report'
+        self.report()
+      else
+        raise "Unexpected action #{@action}"
     end
   end
 
-  class TravisReport
-    def initialize
-      @verbose = false
-      OptionParser.new do |opts|
-        opts.banner = "Usage: sheldon [options]"
-
-        opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
-          @verbose = v
-        end
-      end.parse!
-
-      raise EnvironmentError.new(false), 'Sheldon cannot be run from the master branch' if ENV['TRAVIS_PULL_REQUEST_BRANCH'].to_s == '' && `git rev-parse --abbrev-ref HEAD`.strip() == 'master'
-
-      @webhook = YAML.load_file('.travis.yml')['notifications']['webhooks']['urls'].detect{|url| url.end_with?('/build') }.sub(/build$/, 'details')
-
-      if ENV['TRAVIS_EVENT_TYPE'] != 'pull_request'
-        raise EnvironmentError.new, 'TRAVIS_EVENT_TYPE must be "pull_request"' if @verbose
-        return
+  def release
+    timestamp = @event['commits'].map{|commit| commit['timestamp'] }.max
+    ARGV.each{|update|
+      puts "updating timestamp on #{update}" if @verbose
+      doc = File.open(update) { |f| Nokogiri::XML(f) }
+      if File.extname(update) == '.csl' or File.extname(update) == '.xml'
+        doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
+      else
+        raise "Unexpected file extension #{File.extname(update)}"
       end
+      File.write(File.join(@release, update), doc.to_xml)
+    }
+  end
 
-      %w{TRAVIS_COMMIT_RANGE TRAVIS_REPO_SLUG}.each{|var|
-        raise EnvironmentError.new, "#{var} is not set" if ENV[var].to_s == ''
-      }
+  def welcome
+    raise "Only call me when a new GitHub PR is opened" unless @event['action'] == 'opened'
 
-      %w{TRAVIS_BUILD_ID TRAVIS_PULL_REQUEST}.each{|var|
-        raise EnvironmentError.new, "#{var} (#{ENV[var]}) is not a number" unless ENV[var].to_s =~ /^[0-9]+$/
-      }
+    template = Template.load(File.join(@repo, 'pull_request_opened'))
 
-      raise EnvironmentError.new, 'Sheldon must be ran from the project root' unless File.directory?('.git')
+    self.feedback(template.render())
+  end
 
-      @repo = ENV['TRAVIS_REPO_SLUG']
-      @pr = Integer(ENV['TRAVIS_PULL_REQUEST'])
-      @build = Integer(ENV['TRAVIS_BUILD_ID'])
-
-      @changed = []
-      `git diff --name-status $TRAVIS_COMMIT_RANGE`.split(/\n/).each{|change|
-        case change[0]
-          when 'M', 'A'
-            path = change.split(/\t/)[1]
-            @changed << Asset.new(path: path, source: change[0] == 'M' ? path : nil )
-            puts "Changed: #{path}" if @verbose
-
-          when 'D'
-            next
-
-          when 'R'
-            action, from, to = change.split(/\t/)
-            @changed << Asset.new(path: to, source: from)
-            puts "Renamed: #{to}" if @verbose
-
-          else
-            throw "Unexpected change of type #{change[0]}"
-
-        end
-      }
-
-      return if failure()
-
-      case @repo.split('/')[1]
-        when 'styles'
-          details = styles_passed()
-        when 'locales'
-          details = locales_passed()
-        else
-          raise ValueError("Unexpected repo #{@repo}")
-      end
-
-      report(details)
+  def apply
+    #@diff.each{|asset|
+    #  if !asset.path # deleted
+    #    File.delete(asset.source)
+    #  else
+    #    File.open(asset.path, 'w'){|f| f.write(self.get(asset.source || asset.path, @event['pull_request']['head']['sha'])) }
+    #  end
+    #}
+    Tempfile.create('patch') do |patch|
+      File.open(patch.path, 'w'){|f| f.write(@patch) }
+      system('git', 'apply', patch.path)
     end
+  end
 
-    def report(msg)
-      return if msg == ''
+  def feedback(msg)
+    @github.add_comment(ENV['GITHUB_REPOSITORY'], @event['number'], msg)
+  end
 
-      uri = URI.parse("#{@webhook}/#{@repo}/#{@build}")
-      Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-        req = Net::HTTP::Put.new(uri.path, { 'Content-Type' => 'Content-Type: text/plain; charset=UTF-8' })
-        req.body = msg.encode('utf-8')
-        http.request(req)
-      end
-    end
+  def report()
+    vars = { 'build_url': "https://github.com/#{ENV['GITHUB_REPOSITORY']}/actions/runs/#{ENV['GITHUB_RUN_ID']}" }
+    failures = []
 
-    def failure
-      return false unless File.file?('spec/sheldon/travis.json')
-      travis = JSON.load(File.open('spec/sheldon/travis.json'))
+    if File.file?('spec/sheldon/ci.json')
+      ci = JSON.load(File.open('spec/sheldon/ci.json'))
 
-      failures = []
-      travis['examples'].each{|ex|
+      ci['examples'].each{|ex|
         next if ex['status'] == 'passed'
 
         failures << ''
         failures[-1] += '<b>' + CGI::escapeHTML(ex['full_description'].gsub(/\e\[([;\d]+)?m/, '')) + '</b>'
         failures[-1] += "\n```\n" + ex['exception']['message'].gsub(/\e\[([;\d]+)?m/, '').strip() + "\n```\n"
       }
+    end
 
-      if failures.length == 0
-        puts "No failures found" if @verbose
-        return false
-      end
-
+    if failures.length > 0
       puts "#{failures.length} failures found" if @verbose
-
-      report("<details><summary>#{failures.length} test#{failures.length == 1 ? '' : 's'} failed</summary>\n\n#{failures.join("\n")}\n\n</details>")
-      return true
-    end
-
-    def default_locale(style)
-      csl = Nokogiri::XML(style)
-      return csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
-    end
-
-    def styles_passed
-      styles = @changed.select{|asset| asset.path.end_with?('.csl') }.collect{|asset| Style.new(path: asset.path, baseline: asset.source && `git show master:#{asset.source}`) }
-      if styles.empty?
-        puts "No styles changed" if @verbose
-        return ''
+      template = Template.load(File.join(@repo, 'build_failed'))
+      vars['build_details'] = "<details><summary>#{failures.length} test#{failures.length == 1 ? '' : 's'} failed</summary>\n\n#{failures.join("\n")}\n\n</details>"
+    else
+      puts "No failures found" if @verbose 
+      template = Template.load(File.join(@repo, 'build_passed'))
+      case @repo
+        when 'styles'
+          vars['build_details'] = styles_passed()
+        when 'locales'
+          vars['build_details'] = locales_passed()
+        else
+          raise ValueError("Unexpected repo #{@repo}")
       end
-      puts "#{styles.length} styles changed" if @verbose
-
-      comments = ''
-
-      styles.sort!{|a, b|
-        da = File.dirname(a.path)
-        db = File.dirname(b.path)
-        if da.length == db.length
-          # they're both dependents, or both independents, sort on name
-          a.path <=> b.path
-        else
-          # if one is dependent and the other is not, prioritize independents at the root level
-          da.length <=> db.length
-        end
-      }
-      max = Integer(ENV['SHELDON_CHANGED_SHOW_MAX'] || 10)
-      comments = "#{styles.length} styles changed, showing #{max}\n\n" if styles.length > max
-
-      items = JSON.load(File.open('spec/sheldon/items.json'))
-
-      styles.each_with_index{|style, i|
-        File.open(style.path) { |f| style.default_locale = default_locale(f) }
-
-        begin
-          rendered = render(items, style.path, style.default_locale)
-          baseline = style.baseline ? render(items, style.baseline, default_locale(style.baseline)) : nil
-        rescue
-          rendered = nil
-        end
-
-        next if rendered && i >= max
-
-        baseline = nil if rendered.nil?
-
-        comments += '<details>'
-
-        if baseline && rendered == baseline
-          status = 'modified style; unchanged output for sample items'
-        elsif baseline
-          status = 'modified style'
-        elsif rendered
-          status = 'new'
-        else
-          status = 'rendering failure'
-        end
-
-        comments += "<summary>#{style.path} (#{status})</summary>\n"
-        comments += "<blockquote>#{rendered}</blockquote>\n" if rendered
-
-        if baseline && baseline != rendered
-          comments += "\n```diff\n"
-          comments += Diffy::Diff.new(baseline, rendered).to_s
-          comments += "\n```\n"
-        end
-
-        comments += '</details>'
-      }
-
-      puts comments if @verbose
-      return comments
     end
 
-    def locales_passed
+    self.feedback(template.render(vars))
+  end
+
+  def locales_passed
+    return ''
+  end
+
+  def render(items, style, locale)
+    locale = File.join(CSL::Locale.root, "locales-#{locale}.xml") if locale
+    puts ({ style: (style =~ /^</ ? :baseline : style), locale: locale }).inspect if @verbose
+
+    result = ''
+    cp = CiteProc::Processor.new(style: style, locale: locale, format: 'html')
+    cp.import(items)
+
+    items.each_slice(2){|citation|
+      result += cp.process(citation.map{|i| { 'id' => i['id'] } }) + "<br/>\n"
+    }
+
+    bibliography = cp.bibliography
+    if bibliography
+      result += "<hr/>\n"
+      bibliography.each{|line| result += line + "<br/>\n" }
+    end
+
+    return result
+  end
+
+  def get(path, ref)
+    return Base64.decode64(@github.contents(ENV['GITHUB_REPOSITORY'], path: path, ref: ref).to_h[:content])
+  end
+
+  def styles_passed
+    styles = @diff.select{|asset| asset.path && asset.path.end_with?('.csl') }.collect{|asset|
+      Style.new(path: asset.path, baseline: asset.source && self.get(asset.source, @event['pull_request']['base']['sha']))
+    }
+    if styles.empty?
+      puts "No styles changed" if @verbose
       return ''
     end
+    puts "#{styles.length} styles changed" if @verbose
 
-    def render(items, style, locale)
-      locale = File.join(CSL::Locale.root, "locales-#{locale}.xml") if locale
-      puts ({ style: (style =~ /^</ ? :baseline : style), locale: locale }).inspect if @verbose
+    comments = ''
 
-      result = ''
-      cp = CiteProc::Processor.new(style: style, locale: locale, format: 'html')
-      cp.import(items)
+    styles.sort!{|a, b|
+      da = File.dirname(a.path)
+      db = File.dirname(b.path)
+      if da.length == db.length
+        # they're both dependents, or both independents, sort on name
+        a.path <=> b.path
+      else
+        # if one is dependent and the other is not, prioritize independents at the root level
+        da.length <=> db.length
+      end
+    }
+    max = Integer(ENV['SHELDON_CHANGED_SHOW_MAX'] || 10)
+    comments = "#{styles.length} styles changed, showing #{max}\n\n" if styles.length > max
 
-      items.each_slice(2){|citation|
-        result += cp.process(citation.map{|i| { 'id' => i['id'] } }) + "<br/>\n"
-      }
+    items = JSON.load(File.open('spec/sheldon/items.json'))
 
-      bibliography = cp.bibliography
-      if bibliography
-        result += "<hr/>\n"
-        bibliography.each{|line| result += line + "<br/>\n" }
+    styles.each_with_index{|style, i|
+      File.open(style.path) { |f| style.default_locale = default_locale(f) }
+
+      begin
+        rendered = render(items, style.path, style.default_locale)
+        baseline = style.baseline ? render(items, style.baseline, default_locale(style.baseline)) : nil
+      rescue => e
+        puts(e.inspect) if @verbose
+        rendered = nil
       end
 
-      return result
-    end
+      next if rendered && i >= max
+
+      baseline = nil if rendered.nil?
+
+      comments += '<details>'
+
+      if baseline && rendered == baseline
+        status = 'modified style; unchanged output for sample items'
+      elsif baseline
+        status = 'modified style'
+      elsif rendered
+        status = 'new'
+      else
+        status = 'rendering failure'
+      end
+
+      comments += "<summary>#{style.path} (#{status})</summary>\n"
+      comments += "<blockquote>#{rendered}</blockquote>\n" if rendered
+
+      if baseline && baseline != rendered
+        comments += "\n```diff\n"
+        comments += Diffy::Diff.new(baseline, rendered).to_s
+        comments += "\n```\n"
+      end
+
+      comments += '</details>'
+    }
+
+    puts comments if @verbose
+    return comments
   end
+
+  def failed
+  end
+
+  def default_locale(style)
+    csl = Nokogiri::XML(style)
+    return csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
+  end
+
 end
 
-exit(true) if ENV['TRAVIS_PULL_REQUEST_BRANCH'] == 'master'
-
-begin
-  Sheldon::TravisReport.new
-rescue Sheldon::EnvironmentError => err
-  puts err
-  exit(!err.fatal)
-end
+GitHubAction.new
