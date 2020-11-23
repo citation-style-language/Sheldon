@@ -141,7 +141,7 @@ class GitHubAction
   def copy(target, asset, timestamp)
     raise "Unexpected file extension #{File.extname(asset)}" unless File.extname(asset) == @ext
     raise "No timestamp for #{asset}" unless timestamp
-    puts "updating timestamp on #{File.join(target, asset)} to #{timestamp}" if @verbose
+    puts "updating timestamp on #{File.join(target, asset)} to #{timestamp} <#{target}> <#{asset}#>" if @verbose
 
     doc = File.open(asset) { |f| Nokogiri::XML(f) }
     doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
