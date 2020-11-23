@@ -41,7 +41,6 @@ class GitHubAction
     @token = nil
     @verbose = false
     @action = nil
-    @release = nil
 
     actions = %w{welcome apply report}
     begin
@@ -57,7 +56,12 @@ class GitHubAction
           @token = v
         end
         opts.on('--release DIR', 'update timestamps for released files') do |v|
+          raise OptionParser::InvalidOption.new("Can't do both #{@populate ? 'populate' : @action } and release") if @action || @populate
           @release = v
+        end
+        opts.on('--populate DIR', 'populate and update timestamps for all files') do |v|
+          raise OptionParser::InvalidOption.new("Can't do both #{@release ? 'release' : @action } and populate") if @action || @release
+          @populate = v
         end
         opts.on('-v', '--[no-]verbose', 'Verbose logging') do |v|
           @verbose = v
@@ -65,8 +69,7 @@ class GitHubAction
       end
       optparse.parse!
       raise OptionParser::MissingArgument.new('token') if @action and not @token
-      raise OptionParser::MissingArgument.new((actions + ['release']).join('/')) unless @action or @release
-      raise OptionParser::InvalidOption.new("#{@action}+release") if @action and @release
+      raise OptionParser::MissingArgument.new((actions + ['release', 'populate']).join('/')) unless [ @action, @release, @populate ].select{|a| a }.length > 0
     rescue OptionParser::InvalidOption, OptionParser::MissingArgument
       puts $!.to_s
       puts optparse
@@ -79,6 +82,11 @@ class GitHubAction
     if @release
       raise "release can only be performed on a push" unless ENV['GITHUB_EVENT_NAME'] == 'push'
       self.release()
+      exit
+    end
+    if @populate
+      raise "populate can only be performed on a workflow_dispatch" unless ENV['GITHUB_EVENT_NAME'] == 'workflow_dispatch'
+      self.populate()
       exit
     end
 
@@ -120,17 +128,26 @@ class GitHubAction
     end
   end
 
+  def copy(target, asset, timestamp)
+    puts "updating timestamp on #{asset}" if @verbose
+    raise "Unexpected file extension #{File.extname(asset)}" unless File.extname(asset) == '.csl' or File.extname(asset) == '.xml'
+
+    doc = File.open(asset) { |f| Nokogiri::XML(f) }
+    doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
+    File.write(File.join(target, asset), doc.to_xml)
+  end
+
   def release
     timestamp = @event['commits'].map{|commit| commit['timestamp'] }.max
-    ARGV.each{|update|
-      puts "updating timestamp on #{update}" if @verbose
-      doc = File.open(update) { |f| Nokogiri::XML(f) }
-      if File.extname(update) == '.csl' or File.extname(update) == '.xml'
-        doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
-      else
-        raise "Unexpected file extension #{File.extname(update)}"
-      end
-      File.write(File.join(@release, update), doc.to_xml)
+    ARGV.each{|asset|
+      self.copy(@release, asset, timestamp)
+    }
+  end
+
+  def populate
+    `git ls-files -z *.csl *.xml | xargs -0 -n1 -I{} -- git log -1 --format="%aI {}" {}`.split('\n').each{|modified|
+      timestamp, asset = modified.split(' ', 2)
+      self.copy(@populate, asset, timestamp)
     }
   end
 
