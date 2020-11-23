@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'pathname'
 require 'octokit'
 require 'json'
 require 'ostruct'
@@ -76,6 +77,23 @@ class GitHubAction
       exit
     end
 
+    @repo = ENV['GITHUB_REPOSITORY'].split('/').last
+
+    case @repo
+      when 'styles'
+        @ext = '.csl'
+      when 'locales'
+        @ext = '.xml'
+      else
+        raise "Asset extension cannot be established"
+    end
+
+    if @populate
+      raise "populate can only be performed on a workflow_dispatch" unless ENV['GITHUB_EVENT_NAME'] == 'workflow_dispatch'
+      self.populate()
+      exit
+    end
+
     @github = Octokit::Client.new(access_token: @token)
     @event = JSON.load(File.read(ENV['GITHUB_EVENT_PATH']))
 
@@ -84,25 +102,17 @@ class GitHubAction
       self.release()
       exit
     end
-    if @populate
-      raise "populate can only be performed on a workflow_dispatch" unless ENV['GITHUB_EVENT_NAME'] == 'workflow_dispatch'
-      self.populate()
-      exit
-    end
 
     raise "#{@action} can only be performed on a pull request" unless ENV['GITHUB_EVENT_NAME'] == 'pull_request_target'
-
-    @repo = ENV['GITHUB_REPOSITORY'].split('/').last
 
     conn = Faraday.new() do |f|
       f.use FaradayMiddleware::FollowRedirects, limit: 5
       f.adapter Faraday.default_adapter
     end
     @patch = conn.get(@event['pull_request']['diff_url']).body
-    allowed = @repo == 'styles' ? '.csl' : '.xml'
     @diff = []
     GitDiff.from_string(@patch).files.each{|f|
-      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !f.b_path.end_with?(allowed)
+      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !f.b_path.end_with?(@ext)
 
       if f.a_path == f.b_path or f.a_path == '/dev/null' # modified or created
         @diff << Asset.new(path: f.b_path, source: f.a_path == '/dev/null' ? nil : f.a_path)
@@ -129,8 +139,9 @@ class GitHubAction
   end
 
   def copy(target, asset, timestamp)
-    puts "updating timestamp on #{asset}" if @verbose
-    raise "Unexpected file extension #{File.extname(asset)}" unless File.extname(asset) == '.csl' or File.extname(asset) == '.xml'
+    raise "Unexpected file extension #{File.extname(asset)}" unless File.extname(asset) == @ext
+    raise "No timestamp for #{asset}" unless timestamp
+    puts "updating timestamp on #{asset} to #{timestamp}" if @verbose
 
     doc = File.open(asset) { |f| Nokogiri::XML(f) }
     doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
@@ -145,9 +156,30 @@ class GitHubAction
   end
 
   def populate
-    `git ls-files -z *.csl *.xml | xargs -0 -n1 -I{} -- git log -1 --format="%aI {}" {}`.split('\n').each{|modified|
-      timestamp, asset = modified.split(' ', 2)
-      self.copy(@populate, asset, timestamp)
+    timestamp = nil
+    cwd = File.expand_path(Pathname.new(Dir.pwd).cleanpath)
+    copied = []
+
+    `git log --format=format:"<<%aI>>" --name-only .`.split("\n").each{|asset|
+      asset = asset.strip
+
+      if asset == ''
+        # pass
+
+      elsif ts = asset.match(/^<<(.+)>>$/)
+        timestamp = ts.captures[0]
+
+      elsif File.expand_path(Pathname.new(File.dirname(asset)).cleanpath) != cwd
+        # pass
+
+      elsif not File.file?(asset)
+        # puts "nonexistant file #{asset} in git log" if @verbose
+      
+      elsif File.extname(asset) == @ext && !copied.include?(asset)
+        copied << asset
+        self.copy(@populate, asset, timestamp)
+
+      end
     }
   end
 
