@@ -145,7 +145,7 @@ class GitHubAction
 
     doc = File.open(asset) { |f| File.read(f) }
     updated = doc.sub(/<updated>[^<]+<\/updated>/, "<updated>#{timestamp}</updated>")
-    raise "Failed to patch #{asset} to #{timestamp}" unless doc == updated
+    raise "Failed to patch #{asset} to #{timestamp}" if doc == updated
     File.write(File.join(target, asset), updated)
   end
 
