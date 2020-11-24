@@ -143,9 +143,10 @@ class GitHubAction
     raise "No timestamp for #{asset}" unless timestamp
     puts "updating timestamp on #{File.join(target, asset)} to #{timestamp}" if @verbose
 
-    doc = File.open(asset) { |f| Nokogiri::XML(f) }
-    doc.at('//csl:updated', 'csl' => 'http://purl.org/net/xbiblio/csl').content = timestamp
-    File.write(File.join(target, asset), doc.to_xml)
+    doc = File.open(asset) { |f| File.read(f) }
+    updated = doc.sub(/<updated>[^<]+<\/updated>/, "<updated>#{timestamp}</updated>")
+    raise "Failed to patch #{asset} to #{timestamp}" unless doc == updated
+    File.write(File.join(target, asset), updated)
   end
 
   def release
