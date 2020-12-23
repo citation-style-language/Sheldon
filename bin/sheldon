@@ -200,22 +200,34 @@ class GitHubAction
   end
 
   def apply
-    #@diff.each{|asset|
-    #  if !asset.path # deleted
-    #    File.delete(asset.source)
-    #  else
-    #    File.open(asset.path, 'w'){|f| f.write(self.get(asset.source || asset.path, @event['pull_request']['head']['sha'])) }
-    #  end
-    #}
-    Tempfile.create('patch') do |patch|
-      File.open(patch.path, 'w'){|f| f.write(@patch) }
-      if ! system('git', 'apply', patch.path)
-        #puts '====='
-        #puts @patch
-        #puts '====='
-        exit(false)
+    # first remove deletes and old renames
+    @diff.select{|asset| asset.source && asset.source != asset.path}.uniq{|asset| asset.source}.each{|asset|
+      if File.file?(asset.source)
+        puts "#{asset.source} deleted" if !asset.path # renames will be reported below
+        File.delete(asset.source)
       end
-    end
+    }
+    # then apply mods/news/renames
+    @diff.select{|asset| asset.path}.uniq{|asset| asset.path}.each{|asset|
+      if asset.path == asset.source
+        puts "#{asset.path} modified"
+      elsif asset.source
+        puts "#{asset.source} renamed to #{asset.path}"
+      else
+        puts "#{asset.path} added"
+      end
+      File.open(asset.path, 'w'){|f| f.write(self.get(asset.path, @event['pull_request']['head']['sha'])) }
+    }
+
+    #Tempfile.create('patch') do |patch|
+    #  File.open(patch.path, 'w'){|f| f.write(@patch) }
+    #  if ! system('git', 'apply', patch.path)
+    #    #puts '====='
+    #    #puts @patch
+    #    #puts '====='
+    #    exit(false)
+    #  end
+    #end
   end
 
   def feedback(msg)
