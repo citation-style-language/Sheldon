@@ -210,6 +210,9 @@ class GitHubAction
     Tempfile.create('patch') do |patch|
       File.open(patch.path, 'w'){|f| f.write(@patch) }
       if ! system('git', 'apply', patch.path)
+        puts '====='
+        puts @patch
+        puts '====='
         exit(false)
       end
     end
