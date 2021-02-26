@@ -115,7 +115,7 @@ class GitHubAction
     @patch = conn.get(@event['pull_request']['diff_url']).body
     @diff = []
     GitDiff.from_string(@patch).files.each{|f|
-      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !f.b_path.end_with?(@ext) && f.b_path != 'publishers.json' && !f.b_path.end_with?('.yaml')
+      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !([@ext, '.json', '.yaml'].include?(File.extname(f.b_path)))
 
       if f.a_path == f.b_path or f.a_path == '/dev/null' # modified or created
         @diff << Asset.new(path: f.b_path, source: f.a_path == '/dev/null' ? nil : f.a_path)
