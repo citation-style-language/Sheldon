@@ -113,6 +113,7 @@ class GitHubAction
       f.adapter Faraday.default_adapter
     end
     @patch = conn.get(@event['pull_request']['diff_url']).body
+
     @diff = []
     GitDiff.from_string(@patch).files.each{|f|
       raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !([@ext, '.json', '.yaml'].include?(File.extname(f.b_path)))
@@ -338,11 +339,15 @@ class GitHubAction
 
     items = JSON.load(File.open('spec/sheldon/items.json'))
 
+    root = ENV['GITHUB_WORKSPACE']
+    pull_request = File.join(root, 'pull-request')
+    root = pull_request if File.directory?(pull_request)
+
     styles.each_with_index{|style, i|
-      File.open(style.path) { |f| style.default_locale = default_locale(f) }
+      File.open(File.join(root, style.path)) { |f| style.default_locale = default_locale(f) }
 
       begin
-        rendered = render(items, style.path, style.default_locale)
+        rendered = render(items, File.join(root, style.path), style.default_locale)
         baseline = style.baseline ? render(items, style.baseline, default_locale(style.baseline)) : nil
       rescue => e
         puts(e.inspect) if @verbose
