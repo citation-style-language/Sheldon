@@ -258,18 +258,17 @@ class GitHubAction
     end
 
     @diff.select{|asset| asset.path && asset.path.end_with?('acta-neurobiologiae-experimentalis.csl') }.uniq{|asset| asset.path}.each{|asset|
-      dl = nil
-      title = nil
-      language = nil
-      File.open(File.join(ENV['GITHUB_WORKSPACE'], asset.path)) { |f|
-        csl = Nokogiri::XML(f)
-        dl = csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
-        title = csl.xpath('//csl:info/csl:title', 'csl' => 'http://purl.org/net/xbiblio/csl').text
-      }
+      csl = Nokogiri::XML(self.get(asset.path, @event['pull_request']['head']['sha']))
+
+      dl = csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
       dl = dl.to_s if dl
       dl = 'en-US' if dl.nil? or dl == ''
+
+      title = csl.xpath('//csl:info/csl:title', 'csl' => 'http://purl.org/net/xbiblio/csl').text
       if match = title.match(/[(](.+)[)]$/)
         language = match.captures[0]
+      else
+        language = nil
       end
 
       csl = "<b>#{CGI::escapeHTML(File.basename(asset.path))}</b><br>"
