@@ -274,7 +274,7 @@ class GitHubAction
       if not @locales.include?(dl)
         failures << ''
         failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-        failures[-1] += 'Unexpected default-language "' + dl + '"' + "\n\n"
+        failures[-1] += 'Unexpected default-language "' + dl + '" ' + @locales.to_json + "\n\n"
       elsif dl.start_with?('en-')
         if not language.nil?
           failures << ''
