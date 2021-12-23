@@ -99,6 +99,8 @@ class GitHubAction
 
     @github = Octokit::Client.new(access_token: @token)
     @event = JSON.load(File.read(ENV['GITHUB_EVENT_PATH']))
+    @langmap = JSON.load(File.read(File.join(File.dirname(__FILE__), 'langmap.json')))
+    @locales = JSON.load(Base64.decode64(@github.contents('citation-style-language/locales', path: 'locales.json', ref: 'master').to_h[:content]))['language-names'].keys
 
     if @release
       raise "release can only be performed on a push" unless ENV['GITHUB_EVENT_NAME'] == 'push'
@@ -254,6 +256,43 @@ class GitHubAction
         failures[-1] += "\n```\n" + ex['exception']['message'].gsub(/\e\[([;\d]+)?m/, '').strip() + "\n```\n"
       }
     end
+
+    @diff.select{|asset| asset.path && asset.path.end_with?('.csl') }.uniq{|asset| asset.path}.each{|asset|
+      dl = nil
+      title = nil
+      language = nil
+      File.open(File.join(ENV['GITHUB_WORKSPACE'], asset.path)) { |f|
+        csl = Nokogiri::XML(f)
+        dl = csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
+        title = csl.xpath('//csl:info/csl:title', 'csl' => 'http://purl.org/net/xbiblio/csl').text
+      }
+      dl = 'en-US' if dl.nil? or dl == ''
+      if match = title.match(/[(](.+)[)]$/)
+        language = match.capturues[0]
+      end
+
+      if not @locales.include?(dl)
+        failures << ''
+        failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
+        failures[-1] += 'Unexpected default-language "' + dl + '"' + "\n\n"
+      elsif dl.start_with?('en-')
+        if not language.nil?
+          failures << ''
+          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
+          failures[-1] += 'Unexpected language "' + language + '" in title' + "\n\n"
+        end
+      else
+        if language.nil?
+          failures << ''
+          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
+          failures[-1] += "No language indicator in title\n\n"
+        elsif @langmap.key?(dl) and @langmap[dl] != language
+          failures << ''
+          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
+          failures[-1] += 'Language "' + language + '" in title; expected "' + @langmap[dl] + '"'
+        end
+      end
+    }
 
     success = (failures.length == 0) if success.nil?
 
