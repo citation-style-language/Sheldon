@@ -100,7 +100,7 @@ class GitHubAction
     @github = Octokit::Client.new(access_token: @token)
     @event = JSON.load(File.read(ENV['GITHUB_EVENT_PATH']))
     @langmap = JSON.load(File.read(File.join(File.dirname(__FILE__), 'langmap.json')))
-    @locales = JSON.load(Base64.decode64(@github.contents('citation-style-language/locales', path: 'locales.json', ref: 'master').to_h[:content]))['language-names'].keys
+    @locales = JSON.load(Base64.decode64(@github.contents('citation-style-language/locales', path: 'locales.json', ref: 'master').to_h[:content]))['language-names'].keys.sort
 
     if @release
       raise "release can only be performed on a push" unless ENV['GITHUB_EVENT_NAME'] == 'push'
@@ -257,7 +257,7 @@ class GitHubAction
       }
     end
 
-    @diff.select{|asset| asset.path && asset.path.end_with?('.csl') }.uniq{|asset| asset.path}.each{|asset|
+    @diff.select{|asset| asset.path && asset.path.end_with?('acta-neurobiologiae-experimentalis.csl') }.uniq{|asset| asset.path}.each{|asset|
       dl = nil
       title = nil
       language = nil
@@ -274,7 +274,7 @@ class GitHubAction
       if not @locales.include?(dl)
         failures << ''
         failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-        failures[-1] += 'Unexpected default-language "' + dl + '" ' + @locales.inspect + "\n\n"
+        failures[-1] += 'Unexpected default-language "' + dl + '" ' + @locales.inspect + @locales.include?(dl).inspect + "\n\n"
       elsif dl.start_with?('en-')
         if not language.nil?
           failures << ''
