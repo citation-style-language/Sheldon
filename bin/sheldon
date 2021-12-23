@@ -278,7 +278,7 @@ class GitHubAction
         failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" unless language.nil?
       else
         if language.nil?
-          failures << "#{csl}No language indicator in title<br>\n\n"
+          failures << "#{csl}default locale #{dl.inspect} needs a parenthesized language in title<br>\n\n"
         elsif @langmap.key?(dl) and @langmap[dl] != language
           failures << "#{csl}Language #{language.inspect} in title; expected #{@langmap[dl].inspect}<br>\n\n"
         end
