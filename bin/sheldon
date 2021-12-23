@@ -272,25 +272,17 @@ class GitHubAction
         language = match.capturues[0]
       end
 
+      csl = "<b>#{CGI::escapeHTML(File.basename(asset.path))}</b><br>"
       if not @locales.include?(dl)
-        failures << ''
-        failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-        failures[-1] += "Unexpected default-language #{dl.inspect} (must be one of #{@locales.inspect}\n\n"
+        failures << "#{csl}Unexpected default-language #{dl.inspect} (must be one of #{@locales.inspect}<br>\n\n"
       elsif dl.start_with?('en-')
-        if not language.nil?
-          failures << ''
-          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-          failures[-1] += "Unexpected language #{language.inspect} in title\n\n"
-        end
+        failures << "#{csl} #{dl.inspect} #{language.inspect}"
+        failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" if not language.nil?
       else
         if language.nil?
-          failures << ''
-          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-          failures[-1] += "No language indicator in title\n\n"
+          failures << "#{csl}No language indicator in title<br>\n\n"
         elsif @langmap.key?(dl) and @langmap[dl] != language
-          failures << ''
-          failures[-1] += '<b>' + CGI::escapeHTML(File.basename(asset.path)) + '</b><br>'
-          failures[-1] += "Language #{language.inspect} in title; expected #{@langmap[dl].inspect}"
+          failures << "#{csl}Language #{language.inspect} in title; expected #{@langmap[dl].inspect}<br>\n\n"
         end
       end
     }
