@@ -257,7 +257,7 @@ class GitHubAction
       }
     end
 
-    @diff.select{|asset| asset.path && asset.path.end_with?('acta-neurobiologiae-experimentalis.csl') }.uniq{|asset| asset.path}.each{|asset|
+    @diff.select{|asset| asset.path && asset.path.end_with?('.csl') }.uniq{|asset| asset.path}.each{|asset|
       csl = Nokogiri::XML(self.get(asset.path, @event['pull_request']['head']['sha']))
 
       dl = csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
