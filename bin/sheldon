@@ -269,14 +269,14 @@ class GitHubAction
       dl = dl.to_s if dl
       dl = 'en-US' if dl.nil? or dl == ''
       if match = title.match(/[(](.+)[)]$/)
-        language = match.capturues[0]
+        language = match.captures[0]
       end
 
       csl = "<b>#{CGI::escapeHTML(File.basename(asset.path))}</b><br>"
       if not @locales.include?(dl)
         failures << "#{csl}Unexpected default-language #{dl.inspect} (must be one of #{@locales.inspect}<br>\n\n"
       elsif dl.start_with?('en-')
-        failures << "#{csl} #{dl.inspect} #{language.inspect} #{language.nil?}"
+        failures << "#{csl} #{dl.inspect} #{title.inspect} #{language.inspect}"
         failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" unless language.nil?
       else
         if language.nil?
