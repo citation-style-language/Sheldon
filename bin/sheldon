@@ -266,6 +266,7 @@ class GitHubAction
         dl = csl.xpath('//csl:style', 'csl' => 'http://purl.org/net/xbiblio/csl').attr('default-locale')
         title = csl.xpath('//csl:info/csl:title', 'csl' => 'http://purl.org/net/xbiblio/csl').text
       }
+      dl = dl.to_s if dl
       dl = 'en-US' if dl.nil? or dl == ''
       if match = title.match(/[(](.+)[)]$/)
         language = match.capturues[0]
