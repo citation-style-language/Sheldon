@@ -274,14 +274,14 @@ class GitHubAction
       csl = "<b>#{CGI::escapeHTML(File.basename(asset.path))}</b><br>"
       if not @locales.include?(dl)
         failures << "#{csl}Unexpected default-language #{dl.inspect} (must be one of #{@locales.inspect}<br>\n\n"
-      elsif dl.start_with?('en-')
-        failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" unless language.nil?
-      else
-        if language.nil?
-          failures << "#{csl}default locale #{dl.inspect} needs a parenthesized language in title<br>\n\n"
-        elsif @langmap.key?(dl) and @langmap[dl] != language
-          failures << "#{csl}Language #{language.inspect} in title; expected #{@langmap[dl].inspect}<br>\n\n"
-        end
+#      elsif dl.start_with?('en-')
+#        failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" unless language.nil?
+#      else
+#        if language.nil?
+#          failures << "#{csl}default locale #{dl.inspect} needs a parenthesized language in title<br>\n\n"
+#        elsif @langmap.key?(dl) and @langmap[dl] != language
+#          failures << "#{csl}Language #{language.inspect} in title; expected #{@langmap[dl].inspect}<br>\n\n"
+#        end
       end
     }
 
