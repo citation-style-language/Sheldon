@@ -17,6 +17,7 @@ require 'diffy'
 require 'git_diff'
 require 'base64'
 require 'fileutils'
+require 'set'
 
 Asset = Struct.new(:path, :source, keyword_init: true)
 Style = Struct.new(:path, :baseline, :default_locale, keyword_init: true)
@@ -101,6 +102,7 @@ class GitHubAction
     @event = JSON.load(File.read(ENV['GITHUB_EVENT_PATH']))
     @langmap = JSON.load(File.read(File.join(File.dirname(__FILE__), 'langmap.json')))
     @locales = JSON.load(Base64.decode64(@github.contents('citation-style-language/locales', path: 'locales.json', ref: 'master').to_h[:content]))['language-names'].keys.sort
+    @locales = @locales.map{|lc| [lc, lc.gsub(/-.*/, '')]}.flatten.uniq.sort
 
     if @release
       raise "release can only be performed on a push" unless ENV['GITHUB_EVENT_NAME'] == 'push'
@@ -274,14 +276,12 @@ class GitHubAction
       csl = "<b>#{CGI::escapeHTML(File.basename(asset.path))}</b><br>"
       if not @locales.include?(dl)
         failures << "#{csl}Unexpected default-language #{dl.inspect} (must be one of #{@locales.inspect}<br>\n\n"
-#      elsif dl.start_with?('en-')
-#        failures << "#{csl}Unexpected language #{language.inspect} in title<br>\n\n" unless language.nil?
-#      else
-#        if language.nil?
-#          failures << "#{csl}default locale #{dl.inspect} needs a parenthesized language in title<br>\n\n"
-#        elsif @langmap.key?(dl) and @langmap[dl] != language
-#          failures << "#{csl}Language #{language.inspect} in title; expected #{@langmap[dl].inspect}<br>\n\n"
-#        end
+      elsif not dl.start_with?('en-')
+        if language.nil?
+          failures << "#{csl}title should include natural language version of default-locale #{dl.inspect} in parentheses<br>\n\n"
+        elsif @langmap.key?(dl) and @langmap[dl] != language
+          failures << "#{csl}title should include natural language version of default-locale #{dl.inspect} in parentheses; expected #{@langmap[dl].inspect} but found #{language.inspect}<br>\n\n"
+        end
       end
     }
 
