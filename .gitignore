@@ -3,3 +3,6 @@ vendor
 .access_token
 .env
 pkg
+
+event.json
+node_modules

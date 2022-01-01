@@ -1,0 +1,21 @@
+{
+  "name": "sheldon",
+  "version": "1.0.0",
+  "description": "style formatter for sheldon",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/citation-style-language/Sheldon.git"
+  },
+  "author": "Emiliano Heyns",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/citation-style-language/Sheldon/issues"
+  },
+  "homepage": "https://github.com/citation-style-language/Sheldon#readme",
+  "dependencies": {
+    "@retorquere/csl-formatter": "^1.0.7"
+  }
+}

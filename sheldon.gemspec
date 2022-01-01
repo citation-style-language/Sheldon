@@ -19,6 +19,9 @@ Gem::Specification.new do |spec|
     lib/sheldon/version.rb
     sheldon.gemspec
     templates
+
+    package.json
+    package-lock.json
   }
   spec.bindir        = 'bin'
   spec.executables   = ['sheldon']

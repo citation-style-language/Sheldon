@@ -17,6 +17,7 @@ require 'diffy'
 require 'git_diff'
 require 'base64'
 require 'fileutils'
+require 'shellwords'
 require 'set'
 
 Asset = Struct.new(:path, :source, keyword_init: true)
@@ -411,6 +412,23 @@ class GitHubAction
 
       comments += '</details>'
     }
+
+    if File.directory?(pull_request)
+      gemloc = File.join(File.dirname(__FILE__), '..')
+      Dir.mktmpdir{|dir|
+        FileUtils.cp(File.join(gemloc, 'package.json'), dir)
+        FileUtils.cp(File.join(gemloc, 'package-lock.json'), dir)
+        Dir.chdir(dir) do
+          exit(false) if ! system('npm install')
+        end
+        styleformatter = Shellwords.escape(File.join(dir, 'node_modules', '.bin', 'style-formatter'))
+
+        styles.each{|style|
+          style = Shellwords.escape(style.path)
+          system("#{styleformatter} #{style} #{style}")
+        }
+      }
+    end
 
     puts comments if @verbose
     return comments
