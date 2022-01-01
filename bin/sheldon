@@ -423,7 +423,7 @@ class GitHubAction
         styleformatter = Shellwords.escape(File.join(dir, 'node_modules', '.bin', 'style-formatter'))
 
         styles.each{|style|
-          style = Shellwords.escape(style.path)
+          style = Shellwords.escape(File.join(pull_request, style.path))
           puts "#{styleformatter} #{style} #{style}"
           system("#{styleformatter} #{style} #{style}")
         }
