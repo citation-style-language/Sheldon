@@ -417,7 +417,6 @@ class GitHubAction
       gemloc = File.join(File.dirname(__FILE__), '..')
       Dir.mktmpdir{|dir|
         FileUtils.cp(File.join(gemloc, 'package.json'), dir)
-        FileUtils.cp(File.join(gemloc, 'package-lock.json'), dir)
         Dir.chdir(dir) do
           exit(false) if ! system('npm install')
         end

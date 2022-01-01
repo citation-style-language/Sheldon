@@ -21,7 +21,6 @@ Gem::Specification.new do |spec|
     templates
 
     package.json
-    package-lock.json
   }
   spec.bindir        = 'bin'
   spec.executables   = ['sheldon']
