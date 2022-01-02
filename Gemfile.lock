@@ -10,6 +10,7 @@ PATH
   specs:
     sheldon (1.0.30)
       citeproc-ruby (~> 2.0)
+      csl-styles
       diffy
       dotenv
       erubis (~> 2.7)
