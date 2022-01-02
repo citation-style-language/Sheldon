@@ -427,7 +427,8 @@ class GitHubAction
           system("#{styleformatter} #{style} #{style}")
         }
         Dir.chdir(pull_request) do
-          system('pwd && git status')
+          system('pwd')
+          system('git status')
         end
       }
     end
