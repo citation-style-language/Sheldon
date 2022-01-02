@@ -424,7 +424,6 @@ class GitHubAction
 
         styles.each{|style|
           style = Shellwords.escape(File.join(pull_request, style.path))
-          puts "#{styleformatter} #{style}"
           system("#{styleformatter} #{style} #{style}")
         }
         Dir.chdir(pull_request) do
