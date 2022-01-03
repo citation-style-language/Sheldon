@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'bump'
   spec.add_dependency 'citeproc-ruby', '~>2.0'
-  spec.add_dependency 'csl-styles'
+  spec.add_dependency 'csl-styles', '~>2.0'
   spec.add_dependency 'diffy'
   spec.add_dependency 'reverse_markdown'
   spec.add_dependency 'dotenv'
