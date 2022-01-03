@@ -426,9 +426,12 @@ class GitHubAction
           style = Shellwords.escape(File.join(pull_request, style.path))
           system("#{styleformatter} #{style} #{style}")
         }
-        Dir.chdir(pull_request) do
-          system('pwd')
-          system('git status')
+        if @verbose
+          Dir.chdir(pull_request) do
+            system('pwd')
+            system('git status')
+            system('git diff')
+          end
         end
       }
     end
