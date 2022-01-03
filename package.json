@@ -16,6 +16,6 @@
   },
   "homepage": "https://github.com/citation-style-language/Sheldon#readme",
   "dependencies": {
-    "@retorquere/csl-formatter": "github:retorquere/formatter"
+    "csl-formatter": "github:citation-style-language/formatter"
   }
 }
