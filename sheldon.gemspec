@@ -37,8 +37,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'erubis', '~>2.7'
   spec.add_dependency 'octokit', '~>4.0'
   spec.add_dependency 'git_diff'
-  spec.add_dependency 'faraday'
-  spec.add_dependency 'faraday_middleware'
+  spec.add_dependency 'faraday', '1.0.1'
+  spec.add_dependency 'faraday_middleware', '1.2.0'
   # newer hashdiff has namespace conflict
   spec.add_dependency 'hashdiff', '0.3.7'
 end
