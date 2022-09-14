@@ -118,6 +118,7 @@ class GitHubAction
       f.adapter Faraday.default_adapter
     end
     @patch = conn.get(@event['pull_request']['diff_url']).body
+    puts "Loading patch from #{@event['pull_request']['diff_url']}"
 
     @diff = []
     GitDiff.from_string(@patch).files.each{|f|
