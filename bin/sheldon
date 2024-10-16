@@ -70,6 +70,9 @@ class GitHubAction
         opts.on('-v', '--[no-]verbose', 'Verbose logging') do |v|
           @verbose = v
         end
+        opts.on('--contributor', 'Disable file whitelist for contributors') do |v|
+          @contributor = true
+        end
       end
       optparse.parse!
       raise OptionParser::MissingArgument.new('token') if @action and not @token
@@ -122,7 +125,7 @@ class GitHubAction
 
     @diff = []
     GitDiff.from_string(@patch).files.each{|f|
-      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !([@ext, '.json', '.yaml', '.yml'].include?(File.extname(f.b_path)))
+      raise "Unexpected #{@repo} file #{f.b_path} in pull request" if f.b_path != '/dev/null' && !@contributor && !([@ext, '.json', '.yaml', '.yml'].include?(File.extname(f.b_path)))
 
       if f.a_path == f.b_path or f.a_path == '/dev/null' # modified or created
         @diff << Asset.new(path: f.b_path, source: f.a_path == '/dev/null' ? nil : f.a_path)
