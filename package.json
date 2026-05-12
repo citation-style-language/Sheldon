@@ -2,9 +2,7 @@
   "name": "sheldon",
   "version": "1.0.0",
   "description": "style formatter for sheldon",
-  "directories": {
-    "lib": "lib"
-  },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/citation-style-language/Sheldon.git"
@@ -15,7 +13,23 @@
     "url": "https://github.com/citation-style-language/Sheldon/issues"
   },
   "homepage": "https://github.com/citation-style-language/Sheldon#readme",
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
-    "csl-formatter": "github:citation-style-language/formatter"
+    "@octokit/rest": "^21.0.0",
+    "@xmldom/xmldom": "^0.9.0",
+    "citeproc": "^2.1.0",
+    "commander": "^13.0.0",
+    "csl-formatter": "github:citation-style-language/formatter",
+    "diff": "^7.0.0",
+    "ejs": "^3.1.0",
+    "he": "^1.2.0",
+    "parse-diff": "^0.11.0",
+    "xpath": "^0.0.34"
+  },
+  "devDependencies": {
+    "dprint": "^0.54.0",
+    "vitest": "^3.0.0"
   }
 }
