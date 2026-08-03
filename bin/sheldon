@@ -83,7 +83,11 @@ class GitHubAction
       exit
     end
 
-    @repo = ENV['GITHUB_REPOSITORY'].split('/').last
+    # @repo selects the asset extension and the template set, and is normally just the
+    # repository name. SHELDON_REPO overrides it so a scratch repo (which cannot be named
+    # 'styles' alongside the real one) can exercise the styles workflow. It deliberately
+    # does not affect GITHUB_REPOSITORY, which still addresses the real repo for API calls.
+    @repo = ENV['SHELDON_REPO'] || ENV['GITHUB_REPOSITORY'].split('/').last
 
     case @repo
       when 'styles'
